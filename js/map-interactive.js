@@ -899,6 +899,7 @@ function setupPanelEvents(map) {
         //
         // Before mosaic registration, clearly determine whether there are zero search results.
         // モザイク登録の前に、検索結果0件を分かりやすく判定する。
+        // 2026/9/25 Djangoへ移行
         // =============================================================
         btnFetchSatellite.textContent = "Checking STAC...";
         
@@ -979,7 +980,7 @@ function setupPanelEvents(map) {
         // searchidを取得し、複数シーンを仮想モザイク化する。
         // =============================================================
         btnFetchSatellite.textContent = "Registering Mosaic...";
-        const mosaicRegisterUrl = "http://localhost:8001/api/mosaic/register/";
+        const mosaicRegisterUrl = "http://localhost:8001/api/mosaic/create/";
         //const mosaicRegisterUrl = "https://planetarycomputer.microsoft.com/" + "api/data/v1/mosaic/register";
         
         const mosaicSearchBody = {
@@ -1065,6 +1066,29 @@ function setupPanelEvents(map) {
         // 5. モザイク表示パラメータ
         // =============================================================
         btnFetchSatellite.textContent = "Generating Mosaic Tiles...";
+
+        // 2026/9/25 Django移行に伴い追加
+        const mosaicResponse = await fetch("http://localhost:8001/api/mosaic/create/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            collection: collectionId,
+            bbox: bbox,
+            datetime: datetimeRange,
+            cloud_limit: cloudLimit,
+            image_type: imgType
+          })
+        });
+        
+        if (!mosaicResponse.ok) {
+          throw new Error("Django mosaic_create failed.");}
+        const mosaicResult = await mosaicResponse.json();
+        console.log("[Django Mosaic Result]", mosaicResult);
+
+
+        
         const mosaicParams = new URLSearchParams();
         
         // Specifying a collection is mandatory for the Mosaic Tile API.
