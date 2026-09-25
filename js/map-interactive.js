@@ -2,6 +2,7 @@
 // GESAT FlatGeobuf & Planetary Computer + STAC
 // Interactive functions (dedicated panel window & logic): インタラクティブ機能（専用パネルウィンドウ ＆ ロジック） 
 // 2026/9/22 Separate from layer-control.js
+// 2026/9/25 Change GET request to POST requeset using by local Django
 // =========================================================================
 window.selectedMunicipios = []; 
 
@@ -919,12 +920,24 @@ function setupPanelEvents(map) {
         
         console.log("[STAC Preview GET URL]", finalStacSearchUrl);
         
-        const stacResponse = await fetch(finalStacSearchUrl, {
-          method: "GET",
+        const stacResponse = await fetch("http://localhost:8001/api/stac/search/", {
+          method: "POST",
           headers: {
-            "Accept": "application/geo+json, application/json"
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify({
+            collections: [collectionId],
+            bbox: bbox,
+            datetime: datetimeRange,
+            limit: 100,
+            query: {
+              "eo:cloud_cover": {
+                lte: cloudLimit
+              }
             }
-          }
+          })
+        }
         );
         
         if (!stacResponse.ok) {
@@ -966,7 +979,7 @@ function setupPanelEvents(map) {
         // searchidを取得し、複数シーンを仮想モザイク化する。
         // =============================================================
         btnFetchSatellite.textContent = "Registering Mosaic...";
-        const mosaicRegisterUrl = "https://solitary-frog-6558.huh-fujita.workers.dev/";
+        const mosaicRegisterUrl = "http://localhost:8001/api/mosaic/register/";
         //const mosaicRegisterUrl = "https://planetarycomputer.microsoft.com/" + "api/data/v1/mosaic/register";
         
         const mosaicSearchBody = {
