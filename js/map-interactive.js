@@ -1114,49 +1114,50 @@ function setupPanelEvents(map) {
         // 5. Mosaic Display Parameters
         // 5. モザイク表示パラメータ
         // =============================================================
-        btnFetchSatellite.textContent = "Generating Mosaic Tiles...";
+        // Removed 2026/9/27
+        //btnFetchSatellite.textContent = "Generating Mosaic Tiles...";
 
         // 2026/9/25 Django移行に伴い追加
-        const mosaicResponse = await fetch("http://localhost:8001/api/mosaic/create/", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            collection: collectionId,
-            bbox: bbox,
-            datetime: datetimeRange,
-            query: {
-              "eo:cloud_cover": {
-                lte: cloudLimit
-              }
-            },
-            sortby: [
-              {
-                field: "properties.eo:cloud_cover",
-                direction: "asc"
-              },
-              {
-                field: "properties.datetime",
+        //const mosaicResponse = await fetch("http://localhost:8001/api/mosaic/create/", {
+        //  method: "POST",
+        //  headers: {
+        //    "Content-Type": "application/json"
+        //  },
+        //  body: JSON.stringify({
+        //    collection: collectionId,
+        //    bbox: bbox,
+        //    datetime: datetimeRange,
+        //    query: {
+        //      "eo:cloud_cover": {
+        //        lte: cloudLimit
+        //      }
+        //    },
+        //    sortby: [
+        //      {
+        //        field: "properties.eo:cloud_cover",
+        //        direction: "asc"
+        //      },
+        //      {
+        //        field: "properties.datetime",
                 direction: "desc"
-              }
-            ]
-          })
-        });
+        //      }
+        //    ]
+        //  })
+        //});
         
-        if (!mosaicResponse.ok) {
-          throw new Error(`Django mosaic_create failed. HTTP ${mosaicResponse.status}`);}
+        //if (!mosaicResponse.ok) {
+        //  throw new Error(`Django mosaic_create failed. HTTP ${mosaicResponse.status}`);}
 
-        const mosaicResult = await mosaicResponse.json();
+        //const mosaicResult = await mosaicResponse.json();
         
-        console.log("[Django Mosaic Result]", mosaicResult);
+        //console.log("[Django Mosaic Result]", mosaicResult);
 
-        const djangoSearchId = mosaicResult.searchId;
-        const mosaicTileUrl = mosaicResult.tileUrl;
-        window.debugMosaicTileUrl = mosaicTileUrl;
-        window.debugStacItems = mosaicResult.stacItems || [];
-        console.log("[Search ID]", djangoSearchId);
-        console.log("[Mosaic Tile URL]", mosaicTileUrl);
+        //const djangoSearchId = mosaicResult.searchId;
+        //const mosaicTileUrl = mosaicResult.tileUrl;
+        //window.debugMosaicTileUrl = mosaicTileUrl;
+        //window.debugStacItems = mosaicResult.stacItems || [];
+        //console.log("[Search ID]", djangoSearchId);
+        //console.log("[Mosaic Tile URL]", mosaicTileUrl);
 
         // Remove 2026/9/27 
         // const mosaicParams = new URLSearchParams();
@@ -1377,7 +1378,7 @@ function setupPanelEvents(map) {
           
           // 実際にこのタイルで使用されたシーンを取得
           inspectMosaicTileScenes({
-            searchId: djangoSearchId,
+            searchId: searchId,
             collectionId: collectionId,
             coords: tileEvent.coords
           });
