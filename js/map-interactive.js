@@ -1077,117 +1077,138 @@ function setupPanelEvents(map) {
             collection: collectionId,
             bbox: bbox,
             datetime: datetimeRange,
-            cloud_limit: cloudLimit,
-            image_type: imgType
+            query: {
+              "eo:cloud_cover": {
+                lte: cloudlimit
+              }
+            },
+            sortby: [
+              {
+                field: "properties.eo:cloud_cover",
+                direction: "asc"
+              },
+              {
+                field: "properties.datetime",
+                direction: "desc"
+              }
+            ]
           })
         });
         
         if (!mosaicResponse.ok) {
-          throw new Error("Django mosaic_create failed.");}
+          throw new Error(`Django mosaic_create failed. HTTP ${mosaicResponse.status}`);}
+
         const mosaicResult = await mosaicResponse.json();
+        
         console.log("[Django Mosaic Result]", mosaicResult);
 
+        const searchId = mosaicResult.searchId;
+        const mosaicTileUrl = mosaicResult.tileUrl;
+        window.debugMosaicTileUrl = mosaicTileUrl;
+        window.debugStacItems = mosaicResult.stacItems || [];
+        console.log("[Search ID]", searchId);
+        console.log("[Mosaic Tile URL]", mosaicTileUrl);
 
-        
-        const mosaicParams = new URLSearchParams();
+        // Remove 2026/9/27 
+        // const mosaicParams = new URLSearchParams();
         
         // Specifying a collection is mandatory for the Mosaic Tile API.
         // モザイクタイルAPIではcollection指定が必須
-        mosaicParams.set("collection", collectionId);
+        // mosaicParams.set("collection", collectionId);
 
         // PNG tile
-        mosaicParams.set("tile_format", "png");
+        // mosaicParams.set("tile_format", "png");
         
         // -------------------------------------------------------------
         // RGB
         // -------------------------------------------------------------
-         if (imgType === "rgb") {
-           if (satellite === "sentinel-2") {
-             mosaicParams.append("assets", "B04");
-             mosaicParams.append("assets", "B03");
-             mosaicParams.append("assets", "B02");
-             mosaicParams.append("rescale", "0,4000");
-             mosaicParams.append("rescale", "0,4000");
-             mosaicParams.append("rescale", "0,4000");
-           } else {
-             mosaicParams.append("assets", "red");
-             mosaicParams.append("assets", "green");
-             mosaicParams.append("assets", "blue");
-             mosaicParams.append("rescale", "7000,18000");
-             mosaicParams.append("rescale", "7000,18000");
-             mosaicParams.append("rescale", "7000,18000");
-             mosaicParams.set("color_formula", "Gamma RGB 1.5 Saturation 1.1");
-           }
+        // if (imgType === "rgb") {
+        //   if (satellite === "sentinel-2") {
+        //     mosaicParams.append("assets", "B04");
+        //     mosaicParams.append("assets", "B03");
+        //     mosaicParams.append("assets", "B02");
+        //     mosaicParams.append("rescale", "0,4000");
+        //     mosaicParams.append("rescale", "0,4000");
+        //     mosaicParams.append("rescale", "0,4000");
+        //   } else {
+        //     mosaicParams.append("assets", "red");
+        //     mosaicParams.append("assets", "green");
+        //     mosaicParams.append("assets", "blue");
+        //     mosaicParams.append("rescale", "7000,18000");
+        //     mosaicParams.append("rescale", "7000,18000");
+        //     mosaicParams.append("rescale", "7000,18000");
+        //     mosaicParams.set("color_formula", "Gamma RGB 1.5 Saturation 1.1");
+        //   }
         // -------------------------------------------------------------
         // NDVI、NDWI、NDMI、SAVI、NBRI
         // -------------------------------------------------------------
-        } else {
-           let indexAssets = [];
-           let expression = "";
-           if (satellite === "sentinel-2") {
-             switch (imgType) {
-               case "ndvi":
-                 indexAssets = ["B08", "B04"];
-                 expression = "(B08-B04)/(B08+B04)";
-                 break;
-               case "ndwi":
-                 indexAssets = ["B03", "B08"];
-                 expression = "(B03-B08)/(B03+B08)";
-                 break;
-               case "ndmi":
-                 indexAssets = ["B08", "B11"];
-                 expression = "(B08-B11)/(B08+B11)";
-                 break;
-               case "savi":
-                 indexAssets = ["B08", "B04"];
-                 expression = "1.5*(B08-B04)" + "/(B08+B04+5000)";
-                 break;
-               case "nbri":
-                 indexAssets = ["B08", "B12"];
-                 expression = "(B08-B12)/(B08+B12)";
-                 break;
-               default:
-                 throw new Error("Unsupported Sentinel-2 image type: " + imgType);
-           }
-        } else {
-             switch (imgType) {
-               case "ndvi":
-                 indexAssets = ["nir08", "red"];
-                 expression = "(nir08-red)/(nir08+red)"; 
-                 break;
-               case "ndwi":
-                 indexAssets = ["green", "nir08"];
-                 expression = "(green-nir08)/(green+nir08)";
-                 break;
-               case "ndmi":
-                 indexAssets = ["nir08", "swir16"];
-                 expression = "(nir08-swir16)" + "/(nir08+swir16)";
-                 break;
-               case "savi":
-                 indexAssets = ["nir08", "red"];
-                 expression = "1.5*(nir08-red)" + "/(nir08+red+0.5)";
-                 break;
-               case "nbri":
-                 indexAssets = ["nir08", "swir22"];
-                 expression = "(nir08-swir22)" + "/(nir08+swir22)";
-                 break;
-               default:
-                 throw new Error("Unsupported Landsat image type: " + imgType);
-             }
-           }
+        //} else {
+        //   let indexAssets = [];
+        //   let expression = "";
+        //   if (satellite === "sentinel-2") {
+        //     switch (imgType) {
+        //       case "ndvi":
+        //         indexAssets = ["B08", "B04"];
+        //         expression = "(B08-B04)/(B08+B04)";
+        //         break;
+        //       case "ndwi":
+        //         indexAssets = ["B03", "B08"];
+        //         expression = "(B03-B08)/(B03+B08)";
+        //         break;
+        //       case "ndmi":
+        //         indexAssets = ["B08", "B11"];
+        //         expression = "(B08-B11)/(B08+B11)";
+        //         break;
+        //       case "savi":
+        //         indexAssets = ["B08", "B04"];
+        //         expression = "1.5*(B08-B04)" + "/(B08+B04+5000)";
+        //         break;
+        //       case "nbri":
+        //         indexAssets = ["B08", "B12"];
+        //         expression = "(B08-B12)/(B08+B12)";
+        //         break;
+        //       default:
+        //         throw new Error("Unsupported Sentinel-2 image type: " + imgType);
+        //   }
+        //} else {
+        //     switch (imgType) {
+        //       case "ndvi":
+        //         indexAssets = ["nir08", "red"];
+        //         expression = "(nir08-red)/(nir08+red)"; 
+        //         break;
+        //       case "ndwi":
+        //         indexAssets = ["green", "nir08"];
+        //         expression = "(green-nir08)/(green+nir08)";
+        //         break;
+        //       case "ndmi":
+        //         indexAssets = ["nir08", "swir16"];
+        //         expression = "(nir08-swir16)" + "/(nir08+swir16)";
+        //         break;
+        //       case "savi":
+        //         indexAssets = ["nir08", "red"];
+        //         expression = "1.5*(nir08-red)" + "/(nir08+red+0.5)";
+        //         break;
+        //       case "nbri":
+        //         indexAssets = ["nir08", "swir22"];
+        //         expression = "(nir08-swir22)" + "/(nir08+swir22)";
+        //         break;
+        //       default:
+        //         throw new Error("Unsupported Landsat image type: " + imgType);
+        //     }
+        //   }
 
-           indexAssets.forEach(function(assetName) {
-              mosaicParams.append("assets",assetName);
-           });
+        //   indexAssets.forEach(function(assetName) {
+        //      mosaicParams.append("assets",assetName);
+        //   });
 
-           mosaicParams.set("asset_as_band", "true");
-           mosaicParams.set("expression", expression);
-           mosaicParams.set("colormap_name", "viridis");
-           mosaicParams.set("rescale", "-1,1");
+        //   mosaicParams.set("asset_as_band", "true");
+        //   mosaicParams.set("expression", expression);
+        //   mosaicParams.set("colormap_name", "viridis");
+        //   mosaicParams.set("rescale", "-1,1");
            
-           console.log("[Mosaic Index Assets]",indexAssets);
-           console.log("[Mosaic Expression]", expression);
-        }
+        //   console.log("[Mosaic Index Assets]",indexAssets);
+        //   console.log("[Mosaic Expression]", expression);
+        //}
         
         // =============================================================
         // 6. Mosaic TileJSON URL
@@ -1199,48 +1220,49 @@ function setupPanelEvents(map) {
          * 登録レスポンスにTileJSONリンクがある場合でも、
          * 表示パラメータを付加するため、searchidからURLを構築する。
          */
-        const responseTileJsonLink = getMosaicTileJsonLink(mosaicRegistration);
-        console.log("[Mosaic Response TileJSON Link]", responseTileJsonLink);
-        const mosaicTileJsonUrl =
-          "https://planetarycomputer.microsoft.com/"
-          + "api/data/v1/mosaic/"
-          + `${encodeURIComponent(searchId)}/`
-          + "WebMercatorQuad/tilejson.json?"
-          + mosaicParams.toString();
-        console.log("[Mosaic TileJSON URL]", mosaicTileJsonUrl);
+        // Remove 2026/9/27
+        //const responseTileJsonLink = getMosaicTileJsonLink(mosaicRegistration);
+        //console.log("[Mosaic Response TileJSON Link]", responseTileJsonLink);
+        //const mosaicTileJsonUrl =
+        //  "https://planetarycomputer.microsoft.com/"
+        //  + "api/data/v1/mosaic/"
+        //  + `${encodeURIComponent(searchId)}/`
+        //  + "WebMercatorQuad/tilejson.json?"
+        //  + mosaicParams.toString();
+        //console.log("[Mosaic TileJSON URL]", mosaicTileJsonUrl);
         
-        window.debugMosaicTileJsonUrl = mosaicTileJsonUrl;
-        const mosaicTileJsonResponse = await fetch(mosaicTileJsonUrl,
-          {
-            method: "GET",
-            headers: {
-              "Accept":"application/json"
-            }
-        });
+        //window.debugMosaicTileJsonUrl = mosaicTileJsonUrl;
+        //const mosaicTileJsonResponse = await fetch(mosaicTileJsonUrl,
+        //  {
+        //    method: "GET",
+        //    headers: {
+        //      "Accept":"application/json"
+        //    }
+        //});
         
-        if (!mosaicTileJsonResponse.ok) {
-          const errorText = await mosaicTileJsonResponse.text();
-          console.error("[Mosaic TileJSON Error]",
-            {
-              status: mosaicTileJsonResponse.status,
-              statusText: mosaicTileJsonResponse.statusText,
-              response: errorText,
-              url: mosaicTileJsonUrl
-            }
-          );
-         throw new Error("Failed to retrieve the mosaic TileJSON." + ` HTTP ${mosaicTileJsonResponse.status}`);
-        }
+        //if (!mosaicTileJsonResponse.ok) {
+        //  const errorText = await mosaicTileJsonResponse.text();
+        //  console.error("[Mosaic TileJSON Error]",
+        //    {
+        //      status: mosaicTileJsonResponse.status,
+        //      statusText: mosaicTileJsonResponse.statusText,
+        //      response: errorText,
+        //      url: mosaicTileJsonUrl
+        //    }
+        //  );
+        // throw new Error("Failed to retrieve the mosaic TileJSON." + ` HTTP ${mosaicTileJsonResponse.status}`);
+        //}
         
-        const mosaicTileJson = await mosaicTileJsonResponse.json();
-        console.log("[Mosaic TileJSON]", mosaicTileJson);
-        if (!Array.isArray(mosaicTileJson.tiles) || mosaicTileJson.tiles.length === 0) {
-          throw new Error("The mosaic TileJSON is missing the `tiles` array.");
-        }
+        //const mosaicTileJson = await mosaicTileJsonResponse.json();
+        //console.log("[Mosaic TileJSON]", mosaicTileJson);
+        //if (!Array.isArray(mosaicTileJson.tiles) || mosaicTileJson.tiles.length === 0) {
+        //  throw new Error("The mosaic TileJSON is missing the `tiles` array.");
+        //}
         
-        const mosaicTileUrl = mosaicTileJson.tiles[0].replace(/&amp;/g, "&");
-        console.log("[Mosaic Raw Tile URL]", mosaicTileJson.tiles[0]);
-        console.log("[Mosaic Normalized Tile URL]", mosaicTileUrl);
-        window.debugMosaicTileUrl = mosaicTileUrl;
+        //const mosaicTileUrl = mosaicTileJson.tiles[0].replace(/&amp;/g, "&");
+        //console.log("[Mosaic Raw Tile URL]", mosaicTileJson.tiles[0]);
+        //console.log("[Mosaic Normalized Tile URL]", mosaicTileUrl);
+        //window.debugMosaicTileUrl = mosaicTileUrl;
         
         // =============================================================
         // 7. Remove old satellite layer
@@ -1275,8 +1297,8 @@ function setupPanelEvents(map) {
         currentSatelliteLayer = L.tileLayer(mosaicTileUrl,
           {
             pane: "sentinelPane",
-            minZoom: mosaicTileJson.minzoom || 1,
-            maxZoom: mosaicTileJson.maxzoom || 22,
+            minZoom: 1,
+            maxZoom: 22,
             opacity: 1.0,
  
             /*
