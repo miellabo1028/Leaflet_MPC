@@ -975,91 +975,140 @@ function setupPanelEvents(map) {
         // =============================================================
         // 4. Mosaic Search Registration
         // 4. モザイク検索登録
-        //
+        // 4. Django mosaic_create
         // Get the searchid and create a virtual mosaic from multiple scenes.
         // searchidを取得し、複数シーンを仮想モザイク化する。
         // =============================================================
-        btnFetchSatellite.textContent = "Registering Mosaic...";
-        const mosaicRegisterUrl = "http://localhost:8001/api/mosaic/create/";
-        //const mosaicRegisterUrl = "https://planetarycomputer.microsoft.com/" + "api/data/v1/mosaic/register";
+        btnFetchSatellite.textContent = "Generating Mosaic Tiles...";
         
-        const mosaicSearchBody = {
-          collections: [collectionId],
-          bbox: bbox,
-          datetime: datetimeRange,
-          query: {
-            "eo:cloud_cover": {
-              lte: cloudLimit
+        usedMosaicScenes.clear();
+        inspectedMosaicTiles.clear();
+        window.debugUsedMosaicScenes = [];
+        renderUsedMosaicScenesTable();
+        
+        const mosaicResponse = await fetch("http://localhost:8001/api/mosaic/create/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            collections: [collectionId],
+            bbox: bbox,
+            datetime: datetimeRange,
+            query: {
+              "eo:cloud_cover": {
+                lte: cloudLimit
               }
             },
+            sortby: [
+              {
+                field:
+                  "properties.eo:cloud_cover",
+                direction: "asc"
+              },
+              {
+                field:
+                  "properties.datetime",
+                direction: "desc"
+              }
+            ]
+          })
+        });
+        
+        if (!mosaicResponse.ok) {
+          throw new Error(`Django mosaic_create failed. HTTP ${mosaicResponse.status}`);
+        }
+  
+        const mosaicResult = await mosaicResponse.json();
+        console.log("[Django Mosaic Result]", mosaicResult);
+        const searchId = mosaicResult.searchId;
+        const mosaicTileUrl = mosaicResult.tileUrl;
+        window.debugMosaicSearchId = searchId;
+        window.debugMosaicTileUrl = mosaicTileUrl;
+        window.debugStacItems = mosaicResult.stacItems || [];
+        console.log("[Search ID]", searchId);
+        console.log("[Mosaic Tile URL]",mosaicTileUrl);
+        
+        // const mosaicRegisterUrl = "http://localhost:8001/api/mosaic/create/";
+        //const mosaicRegisterUrl = "https://planetarycomputer.microsoft.com/" + "api/data/v1/mosaic/register";
+        
+        // const mosaicSearchBody = {
+        //  collections: [collectionId],
+        //  bbox: bbox,
+        //  datetime: datetimeRange,
+        //  query: {
+        //    "eo:cloud_cover": {
+        //      lte: cloudLimit
+        //      }
+        //    },
           
           /*
            * Prioritize images with low cloud cover.: 雲量の少ない画像を優先。
            * If the quality is comparable, prioritize the new image.: 同程度なら新しい画像を優先。
            */
-          sortby: [
-            {
-              field: "properties.eo:cloud_cover",
-              direction: "asc"
-            },
-            {
-              field: "properties.datetime",
-              direction: "desc"
-            }
-          ]
-        };
+          //sortby: [
+          //  {
+          //    field: "properties.eo:cloud_cover",
+          //    direction: "asc"
+          //  },
+          //  {
+          //    field: "properties.datetime",
+          //    direction: "desc"
+          //  }
+          //]
+        //};
         
-        console.log("[Mosaic Register URL]", mosaicRegisterUrl);
-        console.log("[Mosaic Register Body]", mosaicSearchBody);
+        //console.log("[Mosaic Register URL]", mosaicRegisterUrl);
+        //console.log("[Mosaic Register Body]", mosaicSearchBody);
         
-        const mosaicRegisterResponse =
-          await fetch(
-            mosaicRegisterUrl,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-              },
-              body: JSON.stringify(mosaicSearchBody)
-            }
-        );
+        //const mosaicRegisterResponse =
+        //  await fetch(
+        //    mosaicRegisterUrl,
+        //    {
+        //      method: "POST",
+        //      headers: {
+        //        "Content-Type": "application/json",
+        //        "Accept": "application/json"
+        //      },
+        //      body: JSON.stringify(mosaicSearchBody)
+        //    }
+        //);
         
-        if (!mosaicRegisterResponse.ok) {
-          const errorText = await mosaicRegisterResponse.text();
-          console.error("[Mosaic Register Error]",
-            {
-              url: mosaicRegisterUrl,
-              status: mosaicRegisterResponse.status,
-              statusText: mosaicRegisterResponse.statusText,
-              response: errorText
-            }
-          );
-          throw new Error("Mosaic search registration failed." + ` HTTP ${mosaicRegisterResponse.status}` + `\n${errorText.slice(0, 500)}`);
-        }
+        //if (!mosaicRegisterResponse.ok) {
+        //  const errorText = await mosaicRegisterResponse.text();
+        //  console.error("[Mosaic Register Error]",
+        //    {
+        //      url: mosaicRegisterUrl,
+        //      status: mosaicRegisterResponse.status,
+        //      statusText: mosaicRegisterResponse.statusText,
+        //      response: errorText
+        //    }
+        //  );
+        //  throw new Error("Mosaic search registration failed." + ` HTTP ${mosaicRegisterResponse.status}` + `\n${errorText.slice(0, 500)}`);
+        //}
         
-        const mosaicRegistration = await mosaicRegisterResponse.json();
-        console.log("[Mosaic Registration]", mosaicRegistration);
+        //const mosaicRegistration = await mosaicRegisterResponse.json();
+        //console.log("[Mosaic Registration]", mosaicRegistration);
         
-        const searchId = getMosaicSearchId(mosaicRegistration);
-        if (!searchId) {
-          throw new Error("Mosaic registration was completed, but the search ID could not be retrieved.");
-        }
+        //const searchId = getMosaicSearchId(mosaicRegistration);
+        //if (!searchId) {
+        //  throw new Error("Mosaic registration was completed, but the search ID could not be retrieved.");
+        //}
         
-        console.log("[Mosaic Search ID]", searchId);
+        //console.log("[Mosaic Search ID]", searchId);
         
         // 新しいモザイクの使用シーン記録を初期化
-        usedMosaicScenes.clear();
-        inspectedMosaicTiles.clear();
+        //usedMosaicScenes.clear();
+        //inspectedMosaicTiles.clear();
         
-        window.debugUsedMosaicScenes = [];
+        //window.debugUsedMosaicScenes = [];
 
-        renderUsedMosaicScenesTable();
+        //renderUsedMosaicScenesTable();
         
         // Save so that it can be checked from the console.
         // Consoleから確認できるように保存
-        window.debugMosaicRegistration = mosaicRegistration;
-        window.debugMosaicSearchId = searchId;
+        //window.debugMosaicRegistration = mosaicRegistration;
+        //window.debugMosaicSearchId = searchId;
         
         // =============================================================
         // 5. Mosaic Display Parameters
@@ -1079,7 +1128,7 @@ function setupPanelEvents(map) {
             datetime: datetimeRange,
             query: {
               "eo:cloud_cover": {
-                lte: cloudlimit
+                lte: cloudLimit
               }
             },
             sortby: [
@@ -1102,11 +1151,11 @@ function setupPanelEvents(map) {
         
         console.log("[Django Mosaic Result]", mosaicResult);
 
-        const searchId = mosaicResult.searchId;
+        const djangoSearchId = mosaicResult.searchId;
         const mosaicTileUrl = mosaicResult.tileUrl;
         window.debugMosaicTileUrl = mosaicTileUrl;
         window.debugStacItems = mosaicResult.stacItems || [];
-        console.log("[Search ID]", searchId);
+        console.log("[Search ID]", djangoSearchId);
         console.log("[Mosaic Tile URL]", mosaicTileUrl);
 
         // Remove 2026/9/27 
@@ -1328,7 +1377,7 @@ function setupPanelEvents(map) {
           
           // 実際にこのタイルで使用されたシーンを取得
           inspectMosaicTileScenes({
-            searchId: searchId,
+            searchId: djangoSearchId,
             collectionId: collectionId,
             coords: tileEvent.coords
           });
