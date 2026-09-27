@@ -1022,7 +1022,9 @@ function setupPanelEvents(map) {
         const mosaicResult = await mosaicResponse.json();
         console.log("[Django Mosaic Result]", mosaicResult);
         const searchId = mosaicResult.searchId;
-        const mosaicTileUrl = mosaicResult.tileUrl;
+        // const mosaicTileUrl = mosaicResult.tileUrl;
+        const mosaicTileUrl = mosaicResult.tileUrl.replace(/&amp;/g, "&");
+        console.log("[Fixed Mosaic Tile URL]", mosaicTileUrl);
         window.debugMosaicSearchId = searchId;
         window.debugMosaicTileUrl = mosaicTileUrl;
         window.debugStacItems = mosaicResult.stacItems || [];
@@ -1396,15 +1398,20 @@ function setupPanelEvents(map) {
           }
         });
         
+        // Edit 2026/9/27
+        //currentSatelliteLayer.on("tileerror", function(tileEvent) {
+        //  failedTileCount += 1;
+        //  console.error("[Mosaic Tile Error]", {
+        //    coords: tileEvent.coords,
+        //    error: tileEvent.error,
+        //    tile: tileEvent.tile,
+        //    failedTileCount: failedTileCount,
+        //    url: mosaicTileUrl
+        //  });
+        //});
         currentSatelliteLayer.on("tileerror", function(tileEvent) {
-          failedTileCount += 1;
-          console.error("[Mosaic Tile Error]", {
-            coords: tileEvent.coords,
-            error: tileEvent.error,
-            tile: tileEvent.tile,
-            failedTileCount: failedTileCount,
-            url: mosaicTileUrl
-          });
+          console.error("[Mosaic Tile Error URL]", tileEvent.tile.src);
+          console.error(tileEvent);
         });
         
         currentSatelliteLayer.on("loading", function() {
