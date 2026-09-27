@@ -1416,7 +1416,14 @@ function setupPanelEvents(map) {
         //});
         currentSatelliteLayer.on("tileerror", function(tileEvent) {
           console.error("[Mosaic Tile Error URL]", tileEvent.tile.src);
-          console.error(tileEvent);
+          fetch(tileEvent.tile.src).then(async function(response) {
+            console.error("[Tile HTTP Status]", response.status, response.statusText);
+            const text = await response.text();
+            console.error("[Tile Response Body]", text.slice(0, 1000));
+          })
+            .catch(function(error) {
+              console.error("[Tile Fetch Error]", error);
+            });
         });
         
         currentSatelliteLayer.on("loading", function() {
