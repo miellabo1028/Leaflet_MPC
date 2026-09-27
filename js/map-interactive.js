@@ -1031,6 +1031,11 @@ function setupPanelEvents(map) {
         console.log("[Search ID]", searchId);
         console.log("[Mosaic Tile URL]",mosaicTileUrl);
         
+        console.log("[RAW]", mosaicResult.tileUrl);
+        console.log("[FIXED]", mosaicTileUrl);
+
+
+        
         // const mosaicRegisterUrl = "http://localhost:8001/api/mosaic/create/";
         //const mosaicRegisterUrl = "https://planetarycomputer.microsoft.com/" + "api/data/v1/mosaic/register";
         
