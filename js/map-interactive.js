@@ -995,6 +995,7 @@ function setupPanelEvents(map) {
             collections: [collectionId],
             bbox: bbox,
             datetime: datetimeRange,
+            image_type: imgType,
             query: {
               "eo:cloud_cover": {
                 lte: cloudLimit
