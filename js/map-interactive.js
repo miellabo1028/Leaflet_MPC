@@ -1556,7 +1556,6 @@ function setupPanelEvents(map) {
         } catch(error) {
           console.error(error);
           alert("GeoTIFF出力でエラーが発生しました。\n" + error.message);
-          );
         }
       });
    }
