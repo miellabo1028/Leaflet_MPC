@@ -1507,8 +1507,8 @@ function setupPanelEvents(map) {
           btnFetchSatellite.textContent ="Fetch Satellite Image";
         }
       }
-    });
-                                       
+    }); // addEventListener終了
+  } // ← if(btnFetchSatellite)終了                                       
                                        
   // GeoTiff
    if (btnExportGeoTiff) {
