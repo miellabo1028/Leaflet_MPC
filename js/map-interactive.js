@@ -1508,6 +1508,54 @@ function setupPanelEvents(map) {
         }
       }
     }
+  // GeoTiff
+   if (btnExportGeoTiff) {
+      btnExportGeoTiff.addEventListener("click", async function(e) {
+        L.DomEvent.stopPropagation(e);
+        if (!window.lastMosaicRequest) {
+          alert("先に衛星画像を取得してください。");
+          return;
+        }
+        try {
+          const requestData = window.lastMosaicRequest;
+          const response = await fetch("http://localhost:8001/api/mosaic/export/geotiff/", {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
+            body: JSON.stringify({
+              collections: [
+                requestData.collectionId
+              ],
+              bbox:
+                requestData.bbox
+                datetime: requestData.datetimeRange,
+              image_type: requestData.imgType, query: {
+                "eo:cloud_cover": {
+                  lte: requestData.cloudLimit
+                }
+              }
+            })
+          });
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+          const blob = await response.blob();
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = 'gesat_${requestData.imgType}.tif`;
+            document.body.appendChild(link);
+          link.click();
+          link.remove();
+          URL.revokeObjectURL(url);
+        } catch(error) {
+          console.error(error);
+          alert("GeoTIFF出力でエラーが発生しました。\n" + error.message);
+        }
+      });
+    }      
   );
 }
     
