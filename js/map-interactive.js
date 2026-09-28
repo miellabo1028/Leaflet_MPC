@@ -1529,9 +1529,10 @@ function setupPanelEvents(map) {
                 requestData.collectionId
               ],
               bbox:
-                requestData.bbox
+                requestData.bbox,
                 datetime: requestData.datetimeRange,
-              image_type: requestData.imgType, query: {
+              image_type: requestData.imgType,
+              query: {
                 "eo:cloud_cover": {
                   lte: requestData.cloudLimit
                 }
@@ -1545,7 +1546,7 @@ function setupPanelEvents(map) {
           const url = URL.createObjectURL(blob);
           const link = document.createElement("a");
           link.href = url;
-          link.download = 'gesat_${requestData.imgType}.tif`;
+          link.download = `gesat_${requestData.imgType}.tif`;
             document.body.appendChild(link);
           link.click();
           link.remove();
@@ -1553,11 +1554,11 @@ function setupPanelEvents(map) {
         } catch(error) {
           console.error(error);
           alert("GeoTIFF出力でエラーが発生しました。\n" + error.message);
+          );
         }
-      });
-    }      
-  );
-}
+      }
+    );
+    }
     
     // 選択解除（Clear）
     btnClearSelection.addEventListener("click", function(e) {
