@@ -115,6 +115,9 @@ window.selectedMunicipios = [];
       <!-- Add button of get imagery: 画像取得アクションボタン -->
       <button id="btn-fetch-satellite" class="gesat-btn" style="width: 100%; background-color: #0288d1; color: white; border: none; padding: 6px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px;">Fetch Satellite Image</button>
 
+      <!-- Add button of download imagery: 画像取得アクションボタン -->
+      <button id="btn-export-geotiff" class="gesat-btn" style="width:100%; margin-top:4px; background:#2e7d32; color:white; border:none; padding:6px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:11px;">Export GeoTIFF</button>
+
       <!-- Add table of satellite imageries -->
       <div id="mosaic-scenes-panel" style="width: 268px; max-width: 100%; margin-top: 8px; border: 1px solid #ccc; border-radius: 4px; background: #fff; overflow: hidden; box-sizing: border-box;">
         <div style="display: flex; align-items: center; justify-content: space-between; padding: 3px 4px; background: #f3f3f3; border-bottom: 1px solid #ddd;">
@@ -180,6 +183,7 @@ function setupPanelEvents(map) {
   const sldCloud = document.getElementById("sld-cloud-limit");
   const lblCloud = document.getElementById("lbl-cloud-value");
   const btnFetchSatellite = document.getElementById("btn-fetch-satellite");
+  const btnExportGeoTiff = document.getElementById("btn-export-geotiff");
   
   // For table list of satellite imageries
   const mosaicScenesTitle = document.getElementById("mosaic-scenes-title");
@@ -889,6 +893,14 @@ function setupPanelEvents(map) {
         // =============================================================
         const collectionId = satellite === "sentinel-2" ? "sentinel-2-l2a" : "landsat-c2-l2";
         const datetimeRange = `${startDate}T00:00:00Z/` + `${endDate}T23:59:59Z`;
+
+        window.lastMosaicRequest = {
+          collectionId,
+          bbox,
+          datetimeRange,
+          imgType,
+          cloudLimit
+        };
         
         console.log("[Collection]", collectionId);
         console.log("[Datetime]", datetimeRange);
@@ -1147,7 +1159,7 @@ function setupPanelEvents(map) {
         //      },
         //      {
         //        field: "properties.datetime",
-                direction: "desc"
+        //        direction: "desc"
         //      }
         //    ]
         //  })
