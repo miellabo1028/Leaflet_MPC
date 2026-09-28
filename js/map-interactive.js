@@ -1507,7 +1507,9 @@ function setupPanelEvents(map) {
           btnFetchSatellite.textContent ="Fetch Satellite Image";
         }
       }
-    }
+    });
+                                       
+                                       
   // GeoTiff
    if (btnExportGeoTiff) {
       btnExportGeoTiff.addEventListener("click", async function(e) {
@@ -1556,9 +1558,8 @@ function setupPanelEvents(map) {
           alert("GeoTIFF出力でエラーが発生しました。\n" + error.message);
           );
         }
-      }
-    );
-    }
+      });
+   }
     
     // 選択解除（Clear）
     btnClearSelection.addEventListener("click", function(e) {
