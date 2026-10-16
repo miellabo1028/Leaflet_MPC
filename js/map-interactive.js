@@ -64,6 +64,11 @@ window.selectedMunicipios = [];
     </div>
 
     <!-- ================================================== -->
+    <!-- 2026/10/16 added:                                  -->
+    <!-- ================================================== -->
+    <div id="selected-area-summary" style="margin-top: 5px; margin-bottom: 7px; padding: 5px 6px; border: 1px solid #ddd; border-radius: 4px; background: #f7f7f7; color: #555; font-size: 9px; line-height: 1.5;">No municipality selected.</div>
+
+    <!-- ================================================== -->
     <!-- 2026/9/22 added: Section on Satellite imagries throug STAC + TiTiler:【新規追加】衛星画像取得（STAC + TiTiler）セクション -->
     <!-- ================================================== -->
     <div style="border-top: 1px solid #ddd; margin-top: 10px; padding-top: 10px;">
@@ -117,7 +122,7 @@ window.selectedMunicipios = [];
 
       <!-- Add button of download imagery: 画像取得アクションボタン -->
       <!-- ================================================== -->
-      <!-- Raster Export Settings --> 2026/10/16 added
+      <!-- Raster Export Settings --> 2026/10/16 added        -->
       <!-- ================================================== -->
       <div style="margin-top: 8px; padding: 7px; border: 1px solid #ddd; border-radius: 4px; background: #fafafa;">
         <div style="margin-bottom: 6px; font-size: 10px; font-weight: bold; color: #333;">Raster Export</div>
@@ -238,6 +243,9 @@ function setupPanelEvents(map) {
   const mosaicScenesTitle = document.getElementById("mosaic-scenes-title");
   const mosaicScenesBody = document.getElementById("mosaic-scenes-body");
   const btnDownloadScenes = document.getElementById("btn-download-scenes");
+
+  // 2026/10/16 Added.
+  const selectedAreaSummary = document.getElementById("selected-area-summary");
 
   if (!btnSelectMode || !txtSearch || !dropdown || !btnClearSelection) {
     console.error("[GESAT FGB] UI Elements missing inside interactive panel!");
@@ -370,6 +378,67 @@ function setupPanelEvents(map) {
       };
     }
   
+    // 2026/10/16 Added
+    function calculateGeodesicDistanceMeters(latitude1, longitude1, latitude2, longitude2) {
+      const earthRadiusMeters = 6371008.8;
+      const degreesToRadians = Math.PI / 180;
+      const phi1 = latitude1 * degreesToRadians;
+      const phi2 = latitude2 * degreesToRadians;
+      const deltaPhi = (latitude2 - latitude1) * degreesToRadians;
+      const deltaLambda = (longitude2 - longitude1) * degreesToRadians;
+      const haversineValue = Math.sin(deltaPhi / 2) ** 2 + Math.cos(phi1) * Math.cos(phi2) * Math.sin(deltaLambda / 2) ** 2;
+      const angularDistance = 2 * Math.atan2(Math.sqrt(haversineValue), Math.sqrt(1 - haversineValue));
+      
+      return (earthRadiusMeters * angularDistance);
+    }
+
+    function updateSelectedAreaSummary() {
+      if (!selectedAreaSummary) {
+        return;
+      }
+      
+      if (!window.selectedMunicipios || window.selectedMunicipios.length === 0) {
+        selectedAreaSummary.textContent = "No municipality selected.";
+        return;
+      }
+      
+      try {
+        const selectedExtent = getSelectedMunicipioBbox();
+        const bbox = selectedExtent.bbox;
+        const west = bbox[0];
+        const south = bbox[1];
+        const east = bbox[2];
+        const north = bbox[3];
+        const centerLatitude = (south + north) / 2;
+        const centerLongitude = (west + east) / 2;
+        const widthMeters = calculateGeodesicDistanceMeters(centerLatitude, west, centerLatitude, east);
+        const heightMeters = calculateGeodesicDistanceMeters(south, centerLongitude, north, centerLongitude);
+        const widthKilometers = widthMeters / 1000;
+        const heightKilometers = heightMeters / 1000;
+        const bboxAreaSquareKilometers = (widthMeters * heightMeters) / 1000000;
+        
+        selectedAreaSummary.innerHTML =
+          `<strong>Selected:</strong> `
+          + `${window.selectedMunicipios.length} `
+          + `municipio(s)<br>`
+          + `<strong>BBox:</strong> `
+          + `${widthKilometers.toFixed(1)} × `
+          + `${heightKilometers.toFixed(1)} km<br>`
+          + `<strong>BBox area:</strong> `
+          + `${bboxAreaSquareKilometers.toLocaleString(undefined, {
+            maximumFractionDigits: 0
+          }
+        )} km²`;
+
+      } catch (error) {
+        console.error("[Selected Area Summary Error]", error);
+        selectedAreaSummary.textContent = "Could not calculate the selected area.";
+      }
+    }
+
+    // 2026/10/16 Added.
+    updateSelectedAreaSummary();
+    
     // -------------------------------------------------------------------
     // Clip the TileLayer on screen to the BBox.
     // BBoxに合わせてTileLayerを画面上でクリップ
@@ -723,7 +792,7 @@ function setupPanelEvents(map) {
       }
       
       const sceneList = getUsedMosaicSceneArray();
-      mosaicScenesTitle.textContent = `Scene Candidates (${sceneList.length})`;
+      mosaicScenesTitle.textContent = `Visible Scene Candidates (${sceneList.length})`;
       mosaicScenesBody.innerHTML = "";
       
       // ---------------------------------------------------------------
@@ -1861,6 +1930,9 @@ function setupPanelEvents(map) {
       }
     });
 
+    // 2026/10/16 Added.
+    updateSelectedAreaSummary();
+    
     // モード切り替え（Select）
     btnSelectMode.addEventListener("click", function() {
       isSelectMode = !isSelectMode;
@@ -1983,6 +2055,8 @@ function setupPanelEvents(map) {
           }
         });
       }
+      // 2026/10/16 Added
+      updateSelectedAreaSummary();
     }).addTo(map);
 
     // // Asynchronously fetch data from Cloudflare R2
