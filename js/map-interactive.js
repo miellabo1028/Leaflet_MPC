@@ -116,7 +116,47 @@ window.selectedMunicipios = [];
       <button id="btn-fetch-satellite" class="gesat-btn" style="width: 100%; background-color: #0288d1; color: white; border: none; padding: 6px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px;">Fetch Satellite Image</button>
 
       <!-- Add button of download imagery: 画像取得アクションボタン -->
-      <button id="btn-export-geotiff" class="gesat-btn" style="width:100%; margin-top:4px; background:#2e7d32; color:white; border:none; padding:6px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:11px;">Export GeoTIFF</button>
+      <!-- ================================================== -->
+      <!-- Raster Export Settings --> 2026/10/16 added
+      <!-- ================================================== -->
+      <div style="margin-top: 8px; padding: 7px; border: 1px solid #ddd; border-radius: 4px; background: #fafafa;">
+        <div style="margin-bottom: 6px; font-size: 10px; font-weight: bold; color: #333;">Raster Export</div>
+
+        <!-- Export Purpose -->
+        <div style="margin-bottom: 6px;">
+          <label style="display: block; font-size: 9px; color: #666;">Export Purpose</label>
+          <select id="sel-export-purpose" style="width: 100%; padding: 2px; font-size: 10px;">
+            <option value="display" selected>Distribution, 8-bit RGB</option>
+            <option value="analysis">Analysis, preserve values</option>
+          </select>
+        </div>
+
+        <!-- Output Resolution -->
+        <div style="margin-bottom: 6px;">
+          <label style="display: block; font-size: 9px; color: #666;">Output Resolution</label>
+          <select id="sel-export-resolution" style="width: 100%; padding: 2px; font-size: 10px;">
+            <option value="auto" selected>Recommended / Native</option>
+            <option value="10">10 m</option>
+            <option value="20">20 m</option>
+            <option value="30">30 m</option>
+            <option value="60">60 m</option>
+          </select>
+        </div>
+
+        <!-- Settings note -->
+        <div id="export-settings-note" style="margin-bottom: 6px; padding: 5px; border-radius: 3px; background: #eeeeee; color: #555; font-size: 9px; line-height: 1.4;">Distribution RGB is exported as display-optimized 8-bit.</div>
+
+        <!-- Export progress -->
+        <div id="raster-export-progress" style="display: none; margin-bottom: 6px; padding: 6px; border: 1px solid #90caf9; border-radius: 4px; background: #e3f2fd;">
+          <div id="raster-export-message" style="font-size: 9px; font-weight: bold; color: #0d47a1;">Preparing export...</div>
+          <div id="raster-export-elapsed" style="margin-top: 2px; font-size: 8px; color: #546e7a;">Elapsed: 0 seconds</div>
+          <div style="height: 4px; margin-top: 5px; overflow: hidden; border-radius: 2px; background: #bbdefb;">
+            <div id="raster-export-progress-bar" style="width: 10%; height: 100%; background: #1976d2; transition: width 0.4s ease;"></div>
+          </div>
+        </div>
+
+        <button id="btn-export-geotiff" type="button"class="gesat-btn" style="width: 100%; padding: 6px; border: none; border-radius: 4px; background: #2e7d32; color: white; font-size: 10px; font-weight: bold; cursor: pointer;">Export GeoTIFF</button>
+      </div>
 
       <!-- Add table of satellite imageries -->
       <div id="mosaic-scenes-panel" style="width: 268px; max-width: 100%; margin-top: 8px; border: 1px solid #ccc; border-radius: 4px; background: #fff; overflow: hidden; box-sizing: border-box;">
@@ -184,6 +224,15 @@ function setupPanelEvents(map) {
   const lblCloud = document.getElementById("lbl-cloud-value");
   const btnFetchSatellite = document.getElementById("btn-fetch-satellite");
   const btnExportGeoTiff = document.getElementById("btn-export-geotiff");
+
+  // 2026/10/16 added.
+  const exportPurposeElement = document.getElementById("sel-export-purpose");
+  const exportResolutionElement = document.getElementById("sel-export-resolution");
+  const exportSettingsNote = document.getElementById("export-settings-note");
+  const exportProgressPanel = document.getElementById("raster-export-progress");
+  const exportProgressMessage = document.getElementById("raster-export-message");
+  const exportElapsedElement = document.getElementById("raster-export-elapsed");
+  const exportProgressBar = document.getElementById("raster-export-progress-bar");
   
   // For table list of satellite imageries
   const mosaicScenesTitle = document.getElementById("mosaic-scenes-title");
@@ -203,6 +252,51 @@ function setupPanelEvents(map) {
     });
   }
 
+  // ================================================================
+  // 2026/10/16 Added.
+  // Export Settings UI
+  // 画像タイプに応じて用途メニューを制御
+  // ================================================================
+  function updateExportSettingsUi() {
+    if (!exportPurposeElement || !exportSettingsNote) {
+      return;
+    }
+
+    const imageTypeElement = document.getElementById("sel-img-type");
+    const imageType = imageTypeElement ? imageTypeElement.value : "rgb";
+
+    // RGB以外は現段階では解析用に固定
+    if (imageType !== "rgb") {
+      exportPurposeElement.value = "analysis";
+      exportPurposeElement.disabled = true;
+      exportSettingsNote.textContent = "Index images are exported as " + "analysis-ready Float32 GeoTIFF.";
+      return;
+    }
+
+    // RGBに戻した場合は用途選択を有効化
+    exportPurposeElement.disabled = false;
+
+    if (exportPurposeElement.value === "display") {
+      exportSettingsNote.textContent = "Distribution RGB is converted to " + "display-optimized 8-bit.";
+    } else {
+      exportSettingsNote.textContent = "Analysis RGB preserves the original " + "source pixel values.";
+    }
+  }
+
+  // 用途を変更したとき
+  if (exportPurposeElement) {
+    exportPurposeElement.addEventListener("change", updateExportSettingsUi);
+  }
+
+  // RGB、NDVIなどの画像タイプを変更したとき
+  const exportImageTypeElement = document.getElementById("sel-img-type");
+  if (exportImageTypeElement) {
+    exportImageTypeElement.addEventListener("change", updateExportSettingsUi);
+  }
+
+  // パネル生成時の初期表示を設定
+  updateExportSettingsUi();
+  
   // A variable that holds the satellite image layer currently displayed on the map (to prevent duplication).
   // 💡 現在マップ上に表示している衛星画像レイヤーを保持する変数（重複防止用）
   let currentSatelliteLayer = null;
@@ -1510,55 +1604,249 @@ function setupPanelEvents(map) {
     }); // addEventListener終了
   } // ← if(btnFetchSatellite)終了                                       
                                        
-  // GeoTiff
-   if (btnExportGeoTiff) {
-      btnExportGeoTiff.addEventListener("click", async function(e) {
-        L.DomEvent.stopPropagation(e);
-        if (!window.lastMosaicRequest) {
-          alert("先に衛星画像を取得してください。");
+  // ================================================================
+  // 2026/10/16 Updated.
+  // GeoTIFF Export
+  // ================================================================
+  let rasterExportTimerId = null;
+  let rasterExportStartedAt = null;
+
+  function startRasterExportProgress() {
+    rasterExportStartedAt = Date.now();
+
+    if (exportProgressPanel) {
+      exportProgressPanel.style.display = "block";
+    }
+
+    if (exportProgressMessage) {
+      exportProgressMessage.textContent = "Preparing export...";
+    }
+
+    if (exportElapsedElement) {
+      exportElapsedElement.textContent = "Elapsed: 0 seconds";
+    }
+
+    if (exportProgressBar) {
+      exportProgressBar.style.width = "10%";
+      exportProgressBar.style.background = "#1976d2";
+    }
+
+    if (rasterExportTimerId) {
+      clearInterval(rasterExportTimerId);
+    }
+
+    rasterExportTimerId = setInterval(
+      function() {
+        if (!rasterExportStartedAt) {
           return;
         }
-        try {
-          const requestData = window.lastMosaicRequest;
-          const response = await fetch("http://localhost:8001/api/mosaic/export/geotiff/", {
+
+        const elapsedSeconds = Math.floor((Date.now() - rasterExportStartedAt) / 1000);
+
+        if (exportElapsedElement) {
+          exportElapsedElement.textContent = `Elapsed: ${elapsedSeconds} seconds`;
+        }
+
+        if (exportProgressMessage) {
+          if (elapsedSeconds < 5) {
+            exportProgressMessage.textContent = "Searching satellite scenes...";
+          } else if (elapsedSeconds < 20) {
+            exportProgressMessage.textContent = "Retrieving raster bands...";
+          } else if (elapsedSeconds < 60) {
+            exportProgressMessage.textContent = "Creating the multi-scene mosaic...";
+          } else {
+            exportProgressMessage.textContent = "Still processing. Large areas " + "may take several minutes...";
+          }
+        }
+
+        if (exportProgressBar) {
+          let percent = 20;
+
+          if (elapsedSeconds >= 5) {
+            percent = 35;
+          }
+          if (elapsedSeconds >= 20) {
+            percent = 55;
+          }
+          if (elapsedSeconds >= 60) {
+            percent = 75;
+          }
+          if (elapsedSeconds >= 120) {
+            percent = 88;
+          }
+
+          exportProgressBar.style.width = `${percent}%`;
+        }
+      },
+      1000
+    );
+  }
+
+  function finishRasterExportProgress(succeeded, message) {
+    if (rasterExportTimerId) {
+      clearInterval(rasterExportTimerId);
+      rasterExportTimerId = null;
+    }
+
+    const elapsedSeconds = rasterExportStartedAt ? Math.floor((Date.now() - rasterExportStartedAt) / 1000) : 0;
+
+    if (exportProgressMessage) {
+      exportProgressMessage.textContent = message;
+    }
+
+    if (exportElapsedElement) {
+      exportElapsedElement.textContent = `Completed in ${elapsedSeconds} seconds`;
+    }
+
+    if (exportProgressBar) {
+      exportProgressBar.style.width = "100%";
+      exportProgressBar.style.background = succeeded ? "#2e7d32" : "#c62828";
+    }
+
+    rasterExportStartedAt = null;
+  }
+
+  if (btnExportGeoTiff) {
+    btnExportGeoTiff.addEventListener("click", async function(event) {
+      L.DomEvent.stopPropagation(event);
+
+      if (!window.lastMosaicRequest) {
+        alert("Please obtain the satellite imagery first.");
+        return;
+      }
+
+      const requestData = window.lastMosaicRequest;
+      const exportPurpose = exportPurposeElement ? exportPurposeElement.value : "analysis";
+      const resolutionValue = exportResolutionElement ? exportResolutionElement.value : "auto";
+      const exportBody = {
+        collections: [requestData.collectionId],
+        bbox: requestData.bbox,
+        datetime: requestData.datetimeRange,
+        image_type: requestData.imgType,
+        export_purpose: exportPurpose,
+        query: {
+          "eo:cloud_cover": {
+            lte: requestData.cloudLimit
+          }
+        }
+      };
+
+      if (resolutionValue !== "auto") {
+        exportBody.resolution_m = Number(resolutionValue);
+      }
+
+      btnExportGeoTiff.disabled = true;
+      btnExportGeoTiff.textContent = "Processing...";
+
+      startRasterExportProgress();
+
+      try {
+        console.log("[GeoTIFF Export Request]", exportBody);
+
+        const response = await fetch(
+          (
+            "http://localhost:8001/"
+            + "api/mosaic/export/geotiff/"
+          ),
+          {
             method: "POST",
             headers: {
               "Content-Type":
-                "application/json"
+                "application/json",
+              "Accept":
+                "image/tiff, application/json"
             },
-            body: JSON.stringify({
-              collections: [
-                requestData.collectionId
-              ],
-              bbox:
-                requestData.bbox,
-                datetime: requestData.datetimeRange,
-              image_type: requestData.imgType,
-              query: {
-                "eo:cloud_cover": {
-                  lte: requestData.cloudLimit
-                }
-              }
-            })
-          });
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
+            body: JSON.stringify(
+              exportBody
+            )
           }
-          const blob = await response.blob();
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement("a");
-          link.href = url;
-          link.download = `gesat_${requestData.imgType}.tif`;
-            document.body.appendChild(link);
-          link.click();
-          link.remove();
-          URL.revokeObjectURL(url);
-        } catch(error) {
-          console.error(error);
-          alert("GeoTIFF出力でエラーが発生しました。\n" + error.message);
+        );
+
+        if (!response.ok) {
+          const contentType = response.headers.get("content-type") || "";
+
+          let errorMessage = `HTTP ${response.status}`;
+
+          if (contentType.includes("application/json")) {
+            const errorResult = await response.json();
+
+            console.error("[GeoTIFF Export Error]", errorResult);
+            errorMessage = errorResult.message || errorResult.error || errorMessage;
+
+          } else {
+            const errorText = await response.text();
+
+            console.error("[GeoTIFF Export Error]", errorText);
+
+            errorMessage = errorText.slice(0, 500) || errorMessage;
+          }
+
+          throw new Error(errorMessage);
         }
-      });
-   }
+
+        if (exportProgressMessage) {
+          exportProgressMessage.textContent = "Receiving the completed raster...";
+        }
+
+        if (exportProgressBar) {
+          exportProgressBar.style.width = "95%";
+        }
+
+        const blob = await response.blob();
+
+        if (!blob || blob.size === 0) {
+          throw new Error("The downloaded raster is empty.");
+        }
+
+        const downloadUrl = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        const contentDisposition = response.headers.get("content-disposition");
+
+        let downloadFilename = `gesat_` + `${requestData.collectionId}_` + `${requestData.imgType}_` + `${exportPurpose}.tif`;
+
+        if (contentDisposition) {
+          const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/);
+          const normalMatch = contentDisposition.match(/filename="?([^";]+)"?/);
+
+          if (utf8Match && utf8Match[1]) {
+            downloadFilename = decodeURIComponent(utf8Match[1]);
+
+          } else if (normalMatch && normalMatch[1]) {
+            downloadFilename = normalMatch[1];
+          }
+        }
+
+        link.href = downloadUrl;
+        link.download = downloadFilename;
+
+        document.body.appendChild(link);
+
+        link.click();
+        link.remove();
+
+        setTimeout(
+          function() {
+            URL.revokeObjectURL(downloadUrl);
+          },
+          2000
+        );
+
+        finishRasterExportProgress(true, "Export completed. Download started.");
+
+      } catch (error) {
+        console.error("[GeoTIFF Export Error]", error);
+
+        finishRasterExportProgress(false, "Export failed.");
+
+        alert("An error occurred during GeoTIFF export.\n\n" + error.message);
+
+      } finally {
+        btnExportGeoTiff.disabled = false;
+        btnExportGeoTiff.textContent = "Export GeoTIFF";
+      }
+    }
+  );
+}
     
     // 選択解除（Clear）
     btnClearSelection.addEventListener("click", function(e) {
