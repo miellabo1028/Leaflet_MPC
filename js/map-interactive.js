@@ -122,7 +122,7 @@ window.selectedMunicipios = [];
 
       <!-- Add button of download imagery: 画像取得アクションボタン -->
       <!-- ================================================== -->
-      <!-- Raster Export Settings --> 2026/10/16 added        -->
+      <!-- Raster Export Settings 2026/10/16 added            -->
       <!-- ================================================== -->
       <div style="margin-top: 8px; padding: 7px; border: 1px solid #ddd; border-radius: 4px; background: #fafafa;">
         <div style="margin-bottom: 6px; font-size: 10px; font-weight: bold; color: #333;">Raster Export</div>
@@ -160,7 +160,7 @@ window.selectedMunicipios = [];
           </div>
         </div>
 
-        <button id="btn-export-geotiff" type="button"class="gesat-btn" style="width: 100%; padding: 6px; border: none; border-radius: 4px; background: #2e7d32; color: white; font-size: 10px; font-weight: bold; cursor: pointer;">Export GeoTIFF</button>
+        <button id="btn-export-geotiff" type="button" class="gesat-btn" style="width: 100%; padding: 6px; border: none; border-radius: 4px; background: #2e7d32; color: white; font-size: 10px; font-weight: bold; cursor: pointer;">Export GeoTIFF</button>
       </div>
 
       <!-- Add table of satellite imageries -->
@@ -436,6 +436,9 @@ function setupPanelEvents(map) {
       }
     }
 
+    // initFgbLayer()からも呼び出せるように公開
+    window.updateSelectedAreaSummary = updateSelectedAreaSummary;
+    
     // 2026/10/16 Added.
     updateSelectedAreaSummary();
     
@@ -1928,10 +1931,10 @@ function setupPanelEvents(map) {
           layer.setStyle(isSelectMode ? STYLES.baseModeOn : STYLES.hidden);
         });
       }
+      // 2026/10/16 Added.
+      updateSelectedAreaSummary();
     });
 
-    // 2026/10/16 Added.
-    updateSelectedAreaSummary();
     
     // モード切り替え（Select）
     btnSelectMode.addEventListener("click", function() {
@@ -2053,10 +2056,12 @@ function setupPanelEvents(map) {
             window.selectedMunicipios.push(feature);
             layer.setStyle(STYLES.selected);
           }
+          
+          if (typeof window.updateSelectedAreaSummary === "function") {
+            window.updateSelectedAreaSummary();
+          }
         });
       }
-      // 2026/10/16 Added
-      updateSelectedAreaSummary();
     }).addTo(map);
 
     // // Asynchronously fetch data from Cloudflare R2
