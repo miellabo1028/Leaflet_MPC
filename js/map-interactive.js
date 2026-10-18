@@ -123,6 +123,19 @@ window.selectedMunicipios = [];
         <input type="range" id="sld-cloud-limit" min="0" max="100" value="20" style="width: 100%; margin: 2px 0;">
       </div>
 
+      <!-- ================================================== -->
+      <!-- 2026/10/18 Added                                   -->
+      <!-- Mosaic display priority                            -->
+      <!-- ================================================== -->
+      <div style=" margin-bottom: 8px; padding: 6px; border: 1px solid #dddddd; border-radius: 4px; background: #fafafa;">
+        <label for="sel-mosaic-priority" style=" display: block; margin-bottom: 3px; color: #666666; font-size: 10px;">Display Priority</label>
+        <select id="sel-mosaic-priority" style=" width: 100%; padding: 3px; font-size: 10px;">
+          <option value="speed" selected>Speed priority</option>
+          <option value="quality">Image quality priority</option>
+        </select>
+        <div id="mosaic-priority-note" style=" margin-top: 4px; color: #666666; font-size: 9px; line-height: 1.4;">Uses the current fast mosaic display.</div>
+      </div>
+
       <!-- Add button of get imagery: 画像取得アクションボタン -->
       <button id="btn-fetch-satellite" class="gesat-btn" style="width: 100%; background-color: #0288d1; color: white; border: none; padding: 6px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px;">Fetch Satellite Image</button>
 
@@ -244,6 +257,8 @@ function setupPanelEvents(map) {
   const lblCloud = document.getElementById("lbl-cloud-value");
   const btnFetchSatellite = document.getElementById("btn-fetch-satellite");
   // 2026/10/18 Added
+  const mosaicPriorityElement = document.getElementById("sel-mosaic-priority");
+  const mosaicPriorityNote = document.getElementById("mosaic-priority-note");
   const btnToggleInteractivePanel = document.getElementById("btn-toggle-interactive-panel");
   const interactivePanelContent = document.getElementById("interactive-panel-content");
   const imageryFetchProgress = document.getElementById("imagery-fetch-progress");
@@ -275,6 +290,22 @@ function setupPanelEvents(map) {
     return;
   }
 
+  // 2026/10/18 Added
+  function updateMosaicPriorityNote() {
+    if (!mosaicPriorityElement || !mosaicPriorityNote) {
+      return;
+    }
+    if (mosaicPriorityElement.value === "quality") {
+      mosaicPriorityNote.textContent = "Uses valid-data masks and attempts to fill " + "NoData areas with lower-priority scenes. " + "Processing may take longer.";
+    } else {
+      mosaicPriorityNote.textContent = "Uses the current fast mosaic display.";
+    }
+  }
+  if (mosaicPriorityElement) {
+    mosaicPriorityElement.addEventListener("change", updateMosaicPriorityNote);
+  }
+  updateMosaicPriorityNote();
+  
   // 2026/10/18 Added Interactive Analysis collapse event
   if (btnToggleInteractivePanel && interactivePanelContent) {
     btnToggleInteractivePanel.addEventListener("click", function(event) {
@@ -1181,6 +1212,9 @@ function setupPanelEvents(map) {
       const endDate = endDateElement.value;
       const cloudLimit = Number.parseFloat(sldCloud.value);
       
+      // 2026/10/18 Added
+      const mosaicPriority = mosaicPriorityElement ? mosaicPriorityElement.value : "speed";
+      
       if (!startDate || !endDate) {
         alert("Please specify the start date and end date.");
        return;
@@ -1227,7 +1261,8 @@ function setupPanelEvents(map) {
           bbox,
           datetimeRange,
           imgType,
-          cloudLimit
+          cloudLimit,
+          mosaicPriority
         };
         
         console.log("[Collection]", collectionId);
