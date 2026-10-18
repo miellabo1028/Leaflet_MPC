@@ -1202,8 +1202,7 @@ function setupPanelEvents(map) {
       startImageryFetchProgress();
       let imageryLayerStarted = false;
       let imageryCompleted = false;
-      try {
-        setImageryFetchProgress("Calculating the selected area...", 15);
+      setImageryFetchProgress("Calculating the selected area...", 15);
       
       try {
         // =============================================================
