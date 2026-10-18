@@ -126,14 +126,13 @@ window.selectedMunicipios = [];
       <!-- ================================================== -->
       <!-- 2026/10/18 Added                                   -->
       <!-- Mosaic display priority                            -->
-      <!-- ================================================== -->
-      <div style=" margin-bottom: 8px; padding: 6px; border: 1px solid #dddddd; border-radius: 4px; background: #fafafa;">
-        <label for="sel-mosaic-priority" style=" display: block; margin-bottom: 3px; color: #666666; font-size: 10px;">Display Priority</label>
-        <select id="sel-mosaic-priority" style=" width: 100%; padding: 3px; font-size: 10px;">
+      <div class="mosaic-priority-settings" style="margin-bottom: 8px; padding: 6px; border: 1px solid #dddddd; border-radius: 4px; background: #fafafa;">
+        <label for="sel-mosaic-priority" style="display: block; margin-bottom: 3px; color: #666666; font-size: 10px;">Display Priority</label>
+        <select id="sel-mosaic-priority" style=" width: 100%; padding: 3px; font-size: 10px; box-sizing: border-box;">
           <option value="speed" selected>Speed priority</option>
           <option value="quality">Image quality priority</option>
         </select>
-        <div id="mosaic-priority-note" style=" width: 100%; max-width: 100%; margin-top: 4px; color: #666666; font-size: 9px; line-height: 1.4; white-space: normal; overflow-wrap: anywhere; word-break: normal; box-sizing: border-box;">Uses the current fast mosaic display.</div>
+        <div id="mosaic-priority-note" style="width: 100%; min-width: 0; max-width: 100%; margin-top: 4px; color: #666666; font-size: 9px; line-height: 1.4; white-space: normal; overflow-wrap: anywhere; word-break: normal; box-sizing: border-box;">Uses the current fast mosaic display.</div>
       </div>
 
       <!-- Add button of get imagery: 画像取得アクションボタン -->
