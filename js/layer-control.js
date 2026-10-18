@@ -13,6 +13,7 @@ function addGesatLayerControl(map, layers, visibility) {
     L.DomEvent.on(container, 'click dblclick keydown keypress', L.DomEvent.stopPropagation);
     container.style.pointerEvents = "auto"; 
     
+    // 2026/10/18 updated
     container.innerHTML = `
       <div class="gesat-title-row">
         <div class="gesat-title">Map layers</div>
