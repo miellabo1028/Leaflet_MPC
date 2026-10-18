@@ -303,3 +303,110 @@ function addGesatLayerControl(map, layers, visibility) {
   return control;
 }
 
+/* ==================================================
+ * 2026/10/18 Added
+ * Collapsible control panels
+ * ================================================== */
+
+.gesat-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #cccccc;
+  font-weight: bold;
+}
+
+.gesat-title-row .gesat-title {
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.gesat-collapse-button {
+  flex: 0 0 auto;
+  min-width: 24px;
+  height: 24px;
+  margin: 0;
+  padding: 0 5px;
+  border: 1px solid #cccccc;
+  border-radius: 3px;
+  background: #f5f5f5;
+  color: #333333;
+  cursor: pointer;
+  font: bold 14px Arial, sans-serif;
+  line-height: 22px;
+  text-align: center;
+}
+
+.gesat-collapse-button:hover {
+  background: #e8e8e8;
+}
+
+.gesat-collapsible-content {
+  display: block;
+}
+
+.gesat-collapsible-content.is-collapsed {
+  display: none;
+}
+
+.gesat-control.is-collapsed {
+  min-width: 180px;
+  width: auto;
+  overflow: hidden;
+  padding-bottom: 6px;
+}
+
+.gesat-control.is-collapsed .gesat-title-row {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+/* Satellite image display progress */
+
+.imagery-fetch-progress {
+  display: none;
+  margin-top: 6px;
+  margin-bottom: 6px;
+  padding: 6px;
+  border: 1px solid #81d4fa;
+  border-radius: 4px;
+  background: #e1f5fe;
+}
+
+.imagery-fetch-progress.is-visible {
+  display: block;
+}
+
+.imagery-fetch-progress-message {
+  color: #01579b;
+  font-size: 9px;
+  font-weight: bold;
+  line-height: 1.4;
+}
+
+.imagery-fetch-progress-elapsed {
+  margin-top: 2px;
+  color: #546e7a;
+  font-size: 8px;
+}
+
+.imagery-fetch-progress-track {
+  height: 4px;
+  margin-top: 5px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: #b3e5fc;
+}
+
+.imagery-fetch-progress-bar {
+  width: 10%;
+  height: 100%;
+  background: #0288d1;
+  transition: width 0.4s ease;
+}
