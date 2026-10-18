@@ -14,69 +14,82 @@ function addGesatLayerControl(map, layers, visibility) {
     container.style.pointerEvents = "auto"; 
     
     container.innerHTML = `
-      <div class="gesat-title">Map layers</div>
-
-      <div class="gesat-section">MapBiomas LULC</div>
-      <div class="gesat-children">
-        <div style="margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
-          <label style="cursor:pointer; flex-grow:1; display:flex; align-items:center; margin:0;">
-          <input type="checkbox" id="chk-mapbiomas-2024" style="margin-right:6px;">
-            MapBiomas (2024)
-          </label>
-          <input type="range" id="sld-mapbiomas-2024" min="0" max="100" value="100" style="width:70px; margin-left:10px;">
+      <div class="gesat-title-row">
+        <div class="gesat-title">Map layers</div>
+          <button id="btn-toggle-layer-panel" type="button" class="gesat-collapse-button" aria-expanded="true" aria-controls="layer-panel-content" title="Collapse panel">−</button>
         </div>
-      </div>
+        <div id="layer-panel-content" class="gesat-collapsible-content">
+          <div class="gesat-section">MapBiomas LULC</div>
+      
+        <div class="gesat-children">
+          <div style="margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
+            <label style="cursor:pointer; flex-grow:1; display:flex; align-items:center; margin:0;">
+            <input type="checkbox" id="chk-mapbiomas-2024" style="margin-right:6px;">MapBiomas (2024)</label>
+            <input type="range" id="sld-mapbiomas-2024" min="0" max="100" value="100" style="width:70px; margin-left:10px;">
+          </div>
+        </div>
      
-      <!-- ================================================== -->
-      <!-- Sentinel-2 Control UI -->
-      <!-- ================================================== -->
-      <div class="gesat-section">Sentinel-2 Imagery (COG)</div>
+        <!-- ================================================== -->
+        <!-- Sentinel-2 Control UI -->
+        <!-- ================================================== -->
+        <div class="gesat-section">Sentinel-2 Imagery (COG)</div>
 
-      <div class="gesat-children">
-        <div style="margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
-          <label style="cursor: pointer; flex-grow: 1; display: flex; align-items: center; margin: 0;">
-            <input type="checkbox" id="chk-s2-2025" style="margin-right: 6px;">
-            Sentinel-2 (2025)
-          </label>
-          <input type="range" id="sld-s2-2025" min="0" max="100" value="100" style="width: 70px; margin-left: 10px;">
+        <div class="gesat-children">
+          <div style="margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
+            <label style="cursor: pointer; flex-grow: 1; display: flex; align-items: center; margin: 0;">
+              <input type="checkbox" id="chk-s2-2025" style="margin-right: 6px;">
+              Sentinel-2 (2025)
+            </label>
+            <input type="range" id="sld-s2-2025" min="0" max="100" value="100" style="width: 70px; margin-left: 10px;">
+          </div>
+
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <label style="cursor: pointer; flex-grow: 1; display: flex; align-items: center; margin: 0;">
+              <input type="checkbox" id="chk-s2-2026" style="margin-right: 6px;">
+              Sentinel-2 (2026)
+            </label>
+            <input type="range" id="sld-s2-2026" min="0" max="100" value="100" style="width: 70px; margin-left: 10px;">
+          </div>
         </div>
 
-        <div style="display: flex; align-items: center; justify-content: space-between;">
-          <label style="cursor: pointer; flex-grow: 1; display: flex; align-items: center; margin: 0;">
-            <input type="checkbox" id="chk-s2-2026" style="margin-right: 6px;">
-            Sentinel-2 (2026)
-          </label>
-          <input type="range" id="sld-s2-2026" min="0" max="100" value="100" style="width: 70px; margin-left: 10px;">
+        <div class="gesat-section">Reference overlays</div>
+        <label><input type="checkbox" data-overlay="boliviaBasemap"><span class="swatch base"></span>Bolivia basemap</label>
+        <label><input type="checkbox" data-overlay="protectedAreas"><span class="swatch pa"></span>Protected areas</label>
+        <div class="gesat-section">
+          <label><input type="checkbox" id="admin-boundaries-all">Administrative boundaries</label>
         </div>
-      </div>
+        <div class="gesat-children">
+          <label><input type="checkbox" data-admin-boundary="international"><span class="swatch intl"></span>International boundary</label>
+          <label><input type="checkbox" data-admin-boundary="departamento"><span class="swatch dept"></span>Departamento boundary</label>
+          <label><input type="checkbox" data-admin-boundary="provincia"><span class="swatch prov"></span>Provincia boundary</label>
+          <label><input type="checkbox" data-admin-boundary="distrito"><span class="swatch dist"></span>Municipios boundary</label>
+        </div>
 
-      <div class="gesat-section">Reference overlays</div>
+        <div class="gesat-section">
+          <label><input type="checkbox" id="admin-names-all">Administrative name</label>
+        </div>
 
-      <label><input type="checkbox" data-overlay="boliviaBasemap"><span class="swatch base"></span>Bolivia basemap</label>
-
-      <label><input type="checkbox" data-overlay="protectedAreas"><span class="swatch pa"></span>Protected areas</label>
-
-      <div class="gesat-section">
-        <label><input type="checkbox" id="admin-boundaries-all">Administrative boundaries</label>
-      </div>
-
-      <div class="gesat-children">
-        <label><input type="checkbox" data-admin-boundary="international"><span class="swatch intl"></span>International boundary</label>
-        <label><input type="checkbox" data-admin-boundary="departamento"><span class="swatch dept"></span>Departamento boundary</label>
-        <label><input type="checkbox" data-admin-boundary="provincia"><span class="swatch prov"></span>Provincia boundary</label>
-        <label><input type="checkbox" data-admin-boundary="distrito"><span class="swatch dist"></span>Municipios boundary</label>
-      </div>
-
-      <div class="gesat-section">
-        <label><input type="checkbox" id="admin-names-all">Administrative name</label>
-      </div>
-
-      <div class="gesat-children">
-        <label><input type="checkbox" data-admin-name="departamentoName"><span class="name-swatch">Aa</span>Departamento name</label>
-        <label><input type="checkbox" data-admin-name="provinciaName"><span class="name-swatch">Aa</span>Provicia name</label>
-        <label><input type="checkbox" data-admin-name="distritoName"><span class="name-swatch">Aa</span>Municipios name</label>
+        <div class="gesat-children">
+          <label><input type="checkbox" data-admin-name="departamentoName"><span class="name-swatch">Aa</span>Departamento name</label>
+          <label><input type="checkbox" data-admin-name="provinciaName"><span class="name-swatch">Aa</span>Provicia name</label>
+          <label><input type="checkbox" data-admin-name="distritoName"><span class="name-swatch">Aa</span>Municipios name</label>
+        </div>
       </div>
     `;
+
+    // 2026/10/18 Added
+    const btnToggleLayerPanel =  container.querySelector("#btn-toggle-layer-panel");
+    const layerPanelContent = container.querySelector("#layer-panel-content");
+    if (btnToggleLayerPanel && layerPanelContent) {
+      btnToggleLayerPanel.addEventListener("click", function(event) {
+        L.DomEvent.stopPropagation(event);
+        const collapsed = layerPanelContent.classList.toggle("is-collapsed");
+        container.classList.toggle("is-collapsed", collapsed);
+        btnToggleLayerPanel.textContent = collapsed ? "+" : "−";
+        btnToggleLayerPanel.setAttribute("aria-expanded", String(!collapsed));
+        btnToggleLayerPanel.title = collapsed ? "Expand panel" : "Collapse panel";
+      });
+    }
 
     const overlayInputs = container.querySelectorAll("[data-overlay]");
     const boundaryInputs = container.querySelectorAll("[data-admin-boundary]");
