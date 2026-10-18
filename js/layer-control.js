@@ -52,76 +52,29 @@ function addGesatLayerControl(map, layers, visibility) {
 
       <div class="gesat-section">Reference overlays</div>
 
-      <label>
-        <input type="checkbox" data-overlay="boliviaBasemap">
-        <span class="swatch base"></span>
-        Bolivia basemap
-      </label>
+      <label><input type="checkbox" data-overlay="boliviaBasemap"><span class="swatch base"></span>Bolivia basemap</label>
 
-      <label>
-        <input type="checkbox" data-overlay="protectedAreas">
-        <span class="swatch pa"></span>
-        Protected areas
-      </label>
+      <label><input type="checkbox" data-overlay="protectedAreas"><span class="swatch pa"></span>Protected areas</label>
 
       <div class="gesat-section">
-        <label>
-          <input type="checkbox" id="admin-boundaries-all">
-          Administrative boundaries
-        </label>
+        <label><input type="checkbox" id="admin-boundaries-all">Administrative boundaries</label>
       </div>
 
       <div class="gesat-children">
-        <label>
-          <input type="checkbox" data-admin-boundary="international">
-          <span class="swatch intl"></span>
-          International boundary
-        </label>
-
-        <label>
-          <input type="checkbox" data-admin-boundary="departamento">
-          <span class="swatch dept"></span>
-          Departamento boundary
-        </label>
-
-        <label>
-          <input type="checkbox" data-admin-boundary="provincia">
-          <span class="swatch prov"></span>
-          Provincia boundary
-        </label>
-
-        <label>
-          <input type="checkbox" data-admin-boundary="distrito">
-          <span class="swatch dist"></span>
-          Municipios boundary
-        </label>
+        <label><input type="checkbox" data-admin-boundary="international"><span class="swatch intl"></span>International boundary</label>
+        <label><input type="checkbox" data-admin-boundary="departamento"><span class="swatch dept"></span>Departamento boundary</label>
+        <label><input type="checkbox" data-admin-boundary="provincia"><span class="swatch prov"></span>Provincia boundary</label>
+        <label><input type="checkbox" data-admin-boundary="distrito"><span class="swatch dist"></span>Municipios boundary</label>
       </div>
 
       <div class="gesat-section">
-        <label>
-          <input type="checkbox" id="admin-names-all">
-          Administrative name
-        </label>
+        <label><input type="checkbox" id="admin-names-all">Administrative name</label>
       </div>
 
       <div class="gesat-children">
-        <label>
-          <input type="checkbox" data-admin-name="departamentoName">
-          <span class="name-swatch">Aa</span>
-          Departamento name
-        </label>
-
-        <label>
-          <input type="checkbox" data-admin-name="provinciaName">
-          <span class="name-swatch">Aa</span>
-          Provicia name
-        </label>
-
-        <label>
-          <input type="checkbox" data-admin-name="distritoName">
-          <span class="name-swatch">Aa</span>
-          Municipios name
-        </label>
+        <label><input type="checkbox" data-admin-name="departamentoName"><span class="name-swatch">Aa</span>Departamento name</label>
+        <label><input type="checkbox" data-admin-name="provinciaName"><span class="name-swatch">Aa</span>Provicia name</label>
+        <label><input type="checkbox" data-admin-name="distritoName"><span class="name-swatch">Aa</span>Municipios name</label>
       </div>
     `;
 
