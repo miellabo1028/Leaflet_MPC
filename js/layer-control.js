@@ -4,7 +4,7 @@ function addGesatLayerControl(map, layers, visibility) {
   });
 
   control.onAdd = function () {
-    const container = L.DomUtil.create("div", "gesat-control");
+    const container = L.DomUtil.create("div", "gesat-control is-collapsed");
 
     L.DomEvent.disableClickPropagation(container);
     L.DomEvent.disableScrollPropagation(container);
@@ -16,7 +16,7 @@ function addGesatLayerControl(map, layers, visibility) {
     container.innerHTML = `
       <div class="gesat-title-row">
         <div class="gesat-title">Map layers</div>
-          <button id="btn-toggle-layer-panel" type="button" class="gesat-collapse-button" aria-expanded="true" aria-controls="layer-panel-content" title="Collapse panel">−</button>
+          <button id="btn-toggle-layer-panel" type="button" class="gesat-collapsible-content is-collapsed" aria-expanded="true" aria-controls="layer-panel-content" title="Collapse panel">+</button>
         </div>
         <div id="layer-panel-content" class="gesat-collapsible-content">
           <div class="gesat-section">MapBiomas LULC</div>
