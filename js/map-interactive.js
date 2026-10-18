@@ -1841,20 +1841,22 @@ function setupPanelEvents(map) {
 }
     
     // 選択解除（Clear）
+    // 2026/10/16 Updated.
     btnClearSelection.addEventListener("click", function(e) {
       L.DomEvent.stopPropagation(e);
-      if (window.selectedMunicipios.length === 0) return;
-
+      if (window.selectedMunicipios.length === 0) {
+        return;
+      }
+      
       window.selectedMunicipios = [];
       if (fgbGeojsonLayer) {
         fgbGeojsonLayer.eachLayer(function(layer) {
           layer.setStyle(isSelectMode ? STYLES.baseModeOn : STYLES.hidden);
         });
       }
-      // 2026/10/16 Added.
       updateSelectedAreaSummary();
     });
-
+  
     
     // モード切り替え（Select）
     btnSelectMode.addEventListener("click", function() {
@@ -1872,10 +1874,16 @@ function setupPanelEvents(map) {
           const isSelected = window.selectedMunicipios.some(function(f) {
             return f.properties.MUN_CODE === layer.feature.properties.MUN_CODE;
           });
-          if (isSelected) {
+          // 2026/10/18 Updated
+          if (!isSelectMode) {
+            /*
+             * 選択情報は保持するが、Select OFF時は全図形を非表示にする。
+             */
+            layer.setStyle(STYLES.hidden);
+          } else if (isSelected) {
             layer.setStyle(STYLES.selected);
           } else {
-            layer.setStyle(isSelectMode ? STYLES.baseModeOn : STYLES.hidden);
+            layer.setStyle(STYLES.baseModeOn);
           }
         });
       }
