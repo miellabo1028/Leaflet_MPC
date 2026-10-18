@@ -265,3 +265,37 @@
   background: #0288d1;
   transition: width 0.4s ease;
 }
+
+/* ==================================================
+ * 2026/10/18 Added
+ * Interactive Analysis panel size
+ * ================================================== */
+
+.gesat-interactive-panel {
+  width: 280px;
+  min-width: 280px;
+  max-width: 280px;
+  box-sizing: border-box;
+}
+
+/*
+ * タイトル行を残し、内容部分だけをスクロールする。
+ */
+#interactive-panel-content {
+  width: 100%;
+  max-width: 100%;
+  max-height: calc(100vh - 110px);
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  box-sizing: border-box;
+  padding-right: 4px;
+}
+
+/*
+ * スクロールバーを含めても
+ * 子要素がパネル幅を拡張しないようにする。
+ */
+#interactive-panel-content > * {
+  max-width: 100%;
+  box-sizing: border-box;
+}
