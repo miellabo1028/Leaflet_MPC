@@ -133,7 +133,7 @@ window.selectedMunicipios = [];
           <option value="speed" selected>Speed priority</option>
           <option value="quality">Image quality priority</option>
         </select>
-        <div id="mosaic-priority-note" style=" margin-top: 4px; color: #666666; font-size: 9px; line-height: 1.4;">Uses the current fast mosaic display.</div>
+        <div id="mosaic-priority-note" style=" width: 100%; max-width: 100%; margin-top: 4px; color: #666666; font-size: 9px; line-height: 1.4; white-space: normal; overflow-wrap: anywhere; word-break: normal; box-sizing: border-box;">Uses the current fast mosaic display.</div>
       </div>
 
       <!-- Add button of get imagery: 画像取得アクションボタン -->
