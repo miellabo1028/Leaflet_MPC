@@ -299,3 +299,31 @@
   max-width: 100%;
   box-sizing: border-box;
 }
+
+/* 2026/10/18 Added*/
+#mosaic-priority-note {
+  width: 100%;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  box-sizing: border-box;
+}
+
+#sel-mosaic-priority {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.mosaic-priority-settings {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+
