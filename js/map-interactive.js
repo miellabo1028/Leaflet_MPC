@@ -1232,10 +1232,18 @@ function setupPanelEvents(map) {
 
       // 2026/10/18 Updated
       btnFetchSatellite.disabled = true;
-      setImageryFetchProgress("Searching the STAC catalog...", 30);
+      /*
+       * 最初にプログレス表示を初期化し、その後で現在の処理内容を表示する。
+       */
       startImageryFetchProgress();
+      if (mosaicPriority === "quality") {
+        setImageryFetchProgress("Searching scenes for the quality-priority mosaic...", 15);
+      } else {
+        setImageryFetchProgress("Searching scenes for the fast mosaic...", 15);
+      }
       let imageryLayerStarted = false;
       let imageryCompleted = false;
+      
       setImageryFetchProgress("Calculating the selected area...", 15);
       
       try {
@@ -1255,6 +1263,17 @@ function setupPanelEvents(map) {
         // =============================================================
         const collectionId = satellite === "sentinel-2" ? "sentinel-2-l2a" : "landsat-c2-l2";
         const datetimeRange = `${startDate}T00:00:00Z/` + `${endDate}T23:59:59Z`;
+
+        // 2026/10/18 Added
+        console.log("[Mosaic Display Priority]", {
+          priority: mosaicPriority,
+          mode: mosaicPriority === "quality" ? "Image quality priority" : "Speed priority",
+          collection: collectionId,
+          imageType: imgType,
+          datetime: datetimeRange,
+          cloudLimit: cloudLimit,
+          bbox: bbox
+        });
 
         window.lastMosaicRequest = {
           collectionId,
@@ -1331,7 +1350,12 @@ function setupPanelEvents(map) {
         const stacResult = await stacResponse.json();
         const previewItems = Array.isArray(stacResult.features) ? stacResult.features : [];
         // 2026/10/18 Added.
-        setImageryFetchProgress(`Found ${previewItems.length} scene candidates.`, 45);
+        if (mosaicPriority === "quality") {
+          setImageryFetchProgress(`Found ${previewItems.length} scene candidates. ` + "Checking candidates for NoData filling...", 45);
+        } else {
+          setImageryFetchProgress(`Found ${previewItems.length} scene candidates.`, 45);
+        }
+        
         console.log("[STAC Preview Result]", stacResult);
         console.log("[STAC Preview Item Count]", previewItems.length);
         
@@ -1356,41 +1380,50 @@ function setupPanelEvents(map) {
         // Get the searchid and create a virtual mosaic from multiple scenes.
         // searchidを取得し、複数シーンを仮想モザイク化する。
         // =============================================================
-        setImageryFetchProgress("Registering the virtual mosaic...", 55);
-        
+
+        // 2026/10/18 Updated 
+        if (mosaicPriority === "quality") {
+          setImageryFetchProgress("Registering the quality-priority mosaic...", 55);
+        } else {
+          setImageryFetchProgress("Registering the fast mosaic...", 55);
+        }
+
         usedMosaicScenes.clear();
         inspectedMosaicTiles.clear();
         window.debugUsedMosaicScenes = [];
         renderUsedMosaicScenesTable();
         
+        // 2026/10/18 Updated
+        const mosaicCreateBody = {
+          collections: [collectionId],
+          bbox: bbox,
+          datetime: datetimeRange,
+          image_type: imgType,
+          display_priority: mosaicPriority,
+          query: {
+            "eo:cloud_cover": {
+              lte: cloudLimit
+            }
+          },
+          sortby: [
+            {
+              field: "properties.eo:cloud_cover",
+              direction: "asc"
+            },
+            {
+              field: "properties.datetime",
+              direction: "desc"
+            }
+          ]
+        };
+        
+        console.log("[Mosaic Create Request]", mosaicCreateBody);
         const mosaicResponse = await fetch("http://localhost:8001/api/mosaic/create/", {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
           },
-          body: JSON.stringify({
-            collections: [collectionId],
-            bbox: bbox,
-            datetime: datetimeRange,
-            image_type: imgType,
-            query: {
-              "eo:cloud_cover": {
-                lte: cloudLimit
-              }
-            },
-            sortby: [
-              {
-                field:
-                  "properties.eo:cloud_cover",
-                direction: "asc"
-              },
-              {
-                field:
-                  "properties.datetime",
-                direction: "desc"
-              }
-            ]
-          })
+          body: JSON.stringify(mosaicCreateBody)
         });
         
         if (!mosaicResponse.ok) {
@@ -1399,12 +1432,29 @@ function setupPanelEvents(map) {
   
         const mosaicResult = await mosaicResponse.json();
         // 2026/10/18 Added
-        setImageryFetchProgress("Preparing map tiles...", 70);
+        console.log("[Mosaic NoData Diagnostics]", {
+          requestedPriority: mosaicPriority,
+          returnedPriority: mosaicResult.displayPriority || null,
+          diagnostics: mosaicResult.diagnostics || null,
+          tileUrl: mosaicResult.tileUrl || null,
+          searchId: mosaicResult.searchId || null
+        });
+        // 2026/10/18 Added
+        if (mosaicPriority === "quality") {
+          setImageryFetchProgress("Preparing transparent mosaic tiles...", 70);
+        } else {
+          setImageryFetchProgress("Preparing fast mosaic tiles...", 70);
+        }
         console.log("[Django Mosaic Result]", mosaicResult);
         const searchId = mosaicResult.searchId;
-        // const mosaicTileUrl = mosaicResult.tileUrl;
         const mosaicTileUrl = mosaicResult.tileUrl.replace(/&amp;/g, "&");
         console.log("[Fixed Mosaic Tile URL]", mosaicTileUrl);
+        // 2026/10/18 Added
+        const tileUrlLowerCase = mosaicTileUrl.toLowerCase();
+        console.log("[Mosaic Tile Output Check]", {
+          priority: mosaicPriority,
+          usesPng: tileUrlLowerCase.includes(".png") || tileUrlLowerCase.includes("format=png"), usesJpeg: tileUrlLowerCase.includes(".jpg") || tileUrlLowerCase.includes(".jpeg") || tileUrlLowerCase.includes("format=jpeg"), hasNoDataParameter: tileUrlLowerCase.includes("nodata="), hasAlphaOption: tileUrlLowerCase.includes("alpha")});
+        
         window.debugMosaicSearchId = searchId;
         window.debugMosaicTileUrl = mosaicTileUrl;
         window.debugStacItems = mosaicResult.stacItems || [];
@@ -1443,7 +1493,11 @@ function setupPanelEvents(map) {
         // 9. Leaflet Mosaic Layer
         // 9. Leafletモザイクレイヤー
         // =============================================================
-        setImageryFetchProgress("Rendering mosaic tiles...", 80);
+        if (mosaicPriority === "quality") {
+          setImageryFetchProgress("Rendering quality-priority mosaic tiles...", 80);
+        } else {
+          setImageryFetchProgress("Rendering fast mosaic tiles...", 80);
+        }
         imageryLayerStarted = true;
         currentSatelliteLayer = L.tileLayer(mosaicTileUrl,
           {
@@ -1476,9 +1530,15 @@ function setupPanelEvents(map) {
         currentSatelliteLayer.on("tileload", function(tileEvent) {
           loadedTileCount += 1;
           // 2026/10/18 Added
-          setImageryFetchProgress(("Rendering mosaic tiles... " + `${loadedTileCount} tile(s) loaded`), Math.min(95, 82 + loadedTileCount));
+          const renderingModeText = mosaicPriority === "quality" ? "Rendering quality-priority tiles..." : "Rendering fast mosaic tiles...";
+          setImageryFetchProgress(renderingModeText + ` ${loadedTileCount} tile(s) loaded`, Math.min(95, 82 + loadedTileCount));
+
+          // 2026/10/18 Updated
           if (loadedTileCount === 1) {
-            console.log("[Mosaic First Tile Loaded]", tileEvent.coords);
+            console.log("[Mosaic First Tile Loaded]", {
+              coords: tileEvent.coords,
+              priority: mosaicPriority,
+              tileUrl: tileEvent.tile ? tileEvent.tile.src : null});
           }
           
           // 実際にこのタイルで使用されたシーンを取得
@@ -1500,7 +1560,8 @@ function setupPanelEvents(map) {
             imageryCompleted = true;
             btnFetchSatellite.disabled = false;
             btnFetchSatellite.textContent = "Fetch Satellite Image";
-            finishImageryFetchProgress(true, "Mosaic image displayed successfully.");
+            const completionMessage = mosaicPriority === "quality" ? "Quality-priority mosaic displayed successfully." : "Fast mosaic displayed successfully.";
+            finishImageryFetchProgress(true, completionMessage);
             
             /*
              * 成功欄はしばらく残し、後で自動的に閉じる。
@@ -1561,7 +1622,9 @@ function setupPanelEvents(map) {
           imageryCompleted = true;
           btnFetchSatellite.disabled = false;
           btnFetchSatellite.textContent = "Fetch Satellite Image";
-          finishImageryFetchProgress(true, ("Mosaic image displayed. " + `${loadedTileCount} tile(s) loaded.`));
+          // 2026/10/18 Updated
+          const fallbackCompletionMessage = mosaicPriority === "quality" ? "Quality-priority mosaic displayed." : "Fast mosaic displayed.";
+          finishImageryFetchProgress(true, fallbackCompletionMessage + ` ${loadedTileCount} tile(s) loaded.`);
         }
         });
         
@@ -1608,7 +1671,9 @@ function setupPanelEvents(map) {
           searchId: searchId,
           collection: collectionId,
           satellite: satellite,
-          imageType: imgType
+          imageType: imgType,
+          displayPriority: mosaicPriority,
+          tileUrl: mosaicTileUrl
         });
         
       } catch (error) {
