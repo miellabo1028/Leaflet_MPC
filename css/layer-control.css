@@ -334,3 +334,20 @@
   box-sizing: border-box;
 }
 
+/*
+ * Map Layersを閉じたときは、
+ * コンテンツを確実に非表示にする。
+ */
+.gesat-control.is-collapsed
+#layer-panel-content {
+  display: none;
+}
+
+/*
+ * 開閉ボタン自体は常に表示する。
+ */
+#btn-toggle-layer-panel {
+  display: inline-block;
+}
+
+
