@@ -16,10 +16,11 @@ function addGesatLayerControl(map, layers, visibility) {
     container.innerHTML = `
       <div class="gesat-title-row">
         <div class="gesat-title">Map layers</div>
-          <button id="btn-toggle-layer-panel" type="button" class="gesat-collapsible-content is-collapsed" aria-expanded="true" aria-controls="layer-panel-content" title="Collapse panel">+</button>
+          <button id="btn-toggle-layer-panel" type="button" class="gesat-collapse-button" aria-expanded="false" aria-controls="layer-panel-content" title="Expand panel">+</button>
         </div>
-        <div id="layer-panel-content" class="gesat-collapsible-content">
-          <div class="gesat-section">MapBiomas LULC</div>
+        <div id="layer-panel-content" class="gesat-collapsible-content is-collapsed">
+        
+        <div class="gesat-section">MapBiomas LULC</div>
       
         <div class="gesat-children">
           <div style="margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
@@ -78,16 +79,28 @@ function addGesatLayerControl(map, layers, visibility) {
     `;
 
     // 2026/10/18 Added
-    const btnToggleLayerPanel =  container.querySelector("#btn-toggle-layer-panel");
+    const btnToggleLayerPanel = container.querySelector("#btn-toggle-layer-panel");
     const layerPanelContent = container.querySelector("#layer-panel-content");
     if (btnToggleLayerPanel && layerPanelContent) {
-      btnToggleLayerPanel.addEventListener("click", function(event) {
+      /*
+       * 初期状態をJavaScript側でも明示的に閉じる。
+       * HTMLのクラス指定に誤りがあっても、
+       * ここで状態を統一する。
+       */
+      layerPanelContent.classList.add("is-collapsed");
+      container.classList.add("is-collapsed");
+      btnToggleLayerPanel.classList.remove("gesat-collapsible-content", "is-collapsed");
+      btnToggleLayerPanel.classList.add("gesat-collapse-button");
+      btnToggleLayerPanel.textContent = "+"; btnToggleLayerPanel.setAttribute("aria-expanded", "false");
+      btnToggleLayerPanel.title = "Expand panel"; btnToggleLayerPanel.addEventListener("click", function(event) {
         L.DomEvent.stopPropagation(event);
-        const collapsed = layerPanelContent.classList.toggle("is-collapsed");
-        container.classList.toggle("is-collapsed", collapsed);
-        btnToggleLayerPanel.textContent = collapsed ? "+" : "−";
-        btnToggleLayerPanel.setAttribute("aria-expanded", String(!collapsed));
-        btnToggleLayerPanel.title = collapsed ? "Expand panel" : "Collapse panel";
+        L.DomEvent.preventDefault(event);
+        const willCollapse = !layerPanelContent.classList.contains("is-collapsed");
+        layerPanelContent.classList.toggle("is-collapsed", willCollapse);
+        container.classList.toggle("is-collapsed", willCollapse);
+        btnToggleLayerPanel.textContent = willCollapse ? "+" : "−";
+        btnToggleLayerPanel.setAttribute("aria-expanded", String(!willCollapse));
+        btnToggleLayerPanel.title = willCollapse ? "Expand panel" : "Collapse panel";
       });
     }
 
