@@ -48,11 +48,17 @@ window.selectedMunicipios = [];
   container.style.overflow = "visible"; // 👈 The candidate list will no longer be hidden behind the panel. これにより、候補枠がパネルの下に隠れなくなります
   container.style.position = "relative";
 
+  // 2026/10/18 Updated
   // HTML dedicated to the function window
   // 機能ウィンドウ専用のHTML
   container.innerHTML = `
-    <div class="gesat-title">Interactive Analysis</div>
-    <div class="gesat-children" style="margin-left: 0; padding: 0 4px;">
+    <div class="gesat-title-row">
+      <div class="gesat-title">Interactive Analysis</div>
+      <button id="btn-toggle-interactive-panel" type="button" class="gesat-collapse-button" aria-expanded="true" aria-controls="interactive-panel-content" title="Collapse panel">−</button>
+    </div>
+
+    <div id="interactive-panel-content" class="gesat-children gesat-collapsible-content" style="margin-left: 0; padding: 0 4px;">
+    
     <div style="display: flex; gap: 4px; margin-bottom: 6px; width: 100%;">
       <button id="btn-select-mode" class="gesat-btn btn-inactive" style="flex: 3; font-size: 11px; padding: 4px 4px; white-space: nowrap;">Select Municipios: OFF</button>
       <button id="btn-clear-selection" class="gesat-btn" style="flex: 1; background-color: #757575; color: white; border: none; padding: 4px 6px; border-radius: 4px; cursor: pointer; font-size: 11px; text-align: center;">Clear</button>
@@ -100,11 +106,11 @@ window.selectedMunicipios = [];
       <div style="margin-bottom: 6px; display: flex; gap: 4px;">
         <div style="flex: 1;">
           <label style="font-size: 10px; display: block; color: #666;">Start Date</label>
-          <input type="date" id="date-start" value="2026-01-01" style="width: 100%; font-size: 10px; padding: 2px;">
+          <input type="date" id="date-start" style="width: 100%; font-size: 10px; padding: 2px;">
         </div>
         <div style="flex: 1;">
           <label style="font-size: 10px; display: block; color: #666;">End Date</label>
-          <input type="date" id="date-end" value="2026-09-22" style="width: 100%; font-size: 10px; padding: 2px;">
+          <input type="date" id="date-end" style="width: 100%; font-size: 10px; padding: 2px;">
         </div>
       </div>
 
@@ -119,6 +125,15 @@ window.selectedMunicipios = [];
 
       <!-- Add button of get imagery: 画像取得アクションボタン -->
       <button id="btn-fetch-satellite" class="gesat-btn" style="width: 100%; background-color: #0288d1; color: white; border: none; padding: 6px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px;">Fetch Satellite Image</button>
+
+      <!-- 2026/10/17 Added a progress indicator for satellite image display: 衛星画像表示の進捗欄を追加-->
+      <div id="imagery-fetch-progress" class="imagery-fetch-progress">
+        <div id="imagery-fetch-message" class="imagery-fetch-progress-message">Preparing imagery request...</div>
+        <div id="imagery-fetch-elapsed" class="imagery-fetch-progress-elapsed">Elapsed: 0 seconds</div>
+        <div class="imagery-fetch-progress-track">
+          <div id="imagery-fetch-progress-bar" class="imagery-fetch-progress-bar"></div>
+        </div>
+      </div>
 
       <!-- Add button of download imagery: 画像取得アクションボタン -->
       <!-- ================================================== -->
@@ -228,6 +243,14 @@ function setupPanelEvents(map) {
   const sldCloud = document.getElementById("sld-cloud-limit");
   const lblCloud = document.getElementById("lbl-cloud-value");
   const btnFetchSatellite = document.getElementById("btn-fetch-satellite");
+  // 2026/10/18 Added
+  const btnToggleInteractivePanel = document.getElementById("btn-toggle-interactive-panel");
+  const interactivePanelContent = document.getElementById("interactive-panel-content");
+  const imageryFetchProgress = document.getElementById("imagery-fetch-progress");
+  const imageryFetchMessage = document.getElementById("imagery-fetch-message");
+  const imageryFetchElapsed = document.getElementById("imagery-fetch-elapsed");
+  const imageryFetchProgressBar = document.getElementById("imagery-fetch-progress-bar");
+  
   const btnExportGeoTiff = document.getElementById("btn-export-geotiff");
 
   // 2026/10/16 added.
@@ -252,6 +275,62 @@ function setupPanelEvents(map) {
     return;
   }
 
+  // 2026/10/18 Added Interactive Analysis collapse event
+  if (btnToggleInteractivePanel && interactivePanelContent) {
+    btnToggleInteractivePanel.addEventListener("click", function(event) {
+      L.DomEvent.stopPropagation(event);
+      const collapsed = interactivePanelContent.classList.toggle("is-collapsed");
+      const panelContainer = btnToggleInteractivePanel.closest(".gesat-control");
+      if (panelContainer) {
+        panelContainer.classList.toggle("is-collapsed", collapsed);
+      }
+
+      btnToggleInteractivePanel.textContent = collapsed ? "+" : "−";
+      btnToggleInteractivePanel.setAttribute("aria-expanded", String(!collapsed));
+      btnToggleInteractivePanel.title = collapsed ? "Expand panel" : "Collapse panel";
+    });
+  }
+
+  // 2026/10/18 Automatically set the date from January 1st of the current year to today.
+  const startDateElement = document.getElementById("date-start");
+  const endDateElement = document.getElementById("date-end");
+
+  function formatLocalDateForInput(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return (`${year}-${month}-${day}`);
+  }
+  
+  function setDefaultSatelliteDates() {
+    if (!startDateElement || !endDateElement) {
+      return;
+    }
+    const today = new Date();
+    const firstDayOfCurrentYear = new Date(today.getFullYear(), 0, 1);
+    const todayText = formatLocalDateForInput(today);
+    const firstDayText = formatLocalDateForInput(firstDayOfCurrentYear);
+    
+    /*
+     * 既にユーザーが値を入力している場合は、
+     * パネル再初期化時に上書きしない。
+     */
+    if (!startDateElement.value) {
+      startDateElement.value = firstDayText;
+    }
+    if (!endDateElement.value) {
+      endDateElement.value = todayText;
+    }
+
+    /*
+     * 終了日に未来日が入力されないようにする。
+     */
+    startDateElement.max = todayText;
+    endDateElement.max = todayText;
+  }
+  
+  setDefaultSatelliteDates();
+    
   // ★ Event to synchronize the cloud cover slider value with the label in real-time
   // ★ 雲量スライダーの数値をリアルタイムにラベルへ連動させるイベント
   if (sldCloud && lblCloud) {
@@ -996,6 +1075,84 @@ function setupPanelEvents(map) {
         downloadUsedMosaicScenesCsv();
       });
     }
+
+    // ===================================================================
+    // 2026/10/18 Added
+    // Added a function to manage the progress of satellite image acquisition.
+    // 衛星画像取得の進捗管理関数を追加
+    // ===================================================================
+    let imageryFetchTimerId = null;
+    let imageryFetchStartedAt = null;
+    let imageryFetchPercent = 10;
+    
+    function setImageryFetchProgress(message, percent) {
+      if (imageryFetchMessage) {
+        imageryFetchMessage.textContent = message;
+      }
+      if (Number.isFinite(percent) && imageryFetchProgressBar) {
+        imageryFetchPercent = Math.max(0, Math.min(100, percent));
+        imageryFetchProgressBar.style.width = `${imageryFetchPercent}%`;
+      }
+    }
+    
+    function startImageryFetchProgress() {
+      imageryFetchStartedAt = Date.now();
+      imageryFetchPercent = 10;
+      if (imageryFetchProgress) {
+        imageryFetchProgress.classList.add("is-visible");
+      }
+      if (imageryFetchElapsed) {
+        imageryFetchElapsed.textContent = "Elapsed: 0 seconds";
+      }
+      if (imageryFetchProgressBar) {
+        imageryFetchProgressBar.style.width = "10%";
+        imageryFetchProgressBar.style.background = "#0288d1";
+      }
+      
+      setImageryFetchProgress("Preparing imagery request...", 10);
+      if (imageryFetchTimerId) {
+        clearInterval(imageryFetchTimerId);
+      }
+      imageryFetchTimerId = setInterval(
+        function() {
+          if (!imageryFetchStartedAt) {
+            return;
+          }
+          const elapsedSeconds = Math.floor((Date.now() - imageryFetchStartedAt) / 1000);
+          if (imageryFetchElapsed) {
+            imageryFetchElapsed.textContent = `Elapsed: ${elapsedSeconds} seconds`;
+          }
+          
+          /*
+          * 実際のサーバー進捗率ではないため、
+          * 自動増加は最大90%までにする。
+          */
+          if (imageryFetchProgressBar && imageryFetchPercent < 90) {
+            imageryFetchPercent = Math.min(90, imageryFetchPercent + 1);
+            imageryFetchProgressBar.style.width = `${imageryFetchPercent}%`;
+          }
+        },
+        1000);
+    }
+    
+    function finishImageryFetchProgress(succeeded, message) {
+      if (imageryFetchTimerId) {
+        clearInterval(imageryFetchTimerId);
+        imageryFetchTimerId = null;
+      }
+      const elapsedSeconds = imageryFetchStartedAt ? Math.floor((Date.now() - imageryFetchStartedAt) / 1000) : 0;
+      if (imageryFetchMessage) {
+        imageryFetchMessage.textContent = message;
+      }
+      if (imageryFetchElapsed) {
+        imageryFetchElapsed.textContent = succeeded ? `Completed in ${elapsedSeconds} seconds` : `Stopped after ${elapsedSeconds} seconds`;
+      }
+      if (imageryFetchProgressBar) {
+        imageryFetchProgressBar.style.width = "100%";
+        imageryFetchProgressBar.style.background = succeeded ? "#2e7d32" : "#c62828";
+      }
+      imageryFetchStartedAt = null;
+    }
     
     // ===================================================================
     // Fetch Satellite Image
@@ -1039,8 +1196,14 @@ function setupPanelEvents(map) {
         return;
       }
 
+      // 2026/10/18 Updated
       btnFetchSatellite.disabled = true;
-      btnFetchSatellite.textContent = "Preparing BBox...";
+      setImageryFetchProgress("Searching the STAC catalog...", 30);
+      startImageryFetchProgress();
+      let imageryLayerStarted = false;
+      let imageryCompleted = false;
+      try {
+        setImageryFetchProgress("Calculating the selected area...", 15);
       
       try {
         // =============================================================
@@ -1133,6 +1296,8 @@ function setupPanelEvents(map) {
         
         const stacResult = await stacResponse.json();
         const previewItems = Array.isArray(stacResult.features) ? stacResult.features : [];
+        // 2026/10/18 Added.
+        setImageryFetchProgress(`Found ${previewItems.length} scene candidates.`, 45);
         console.log("[STAC Preview Result]", stacResult);
         console.log("[STAC Preview Item Count]", previewItems.length);
         
@@ -1157,7 +1322,7 @@ function setupPanelEvents(map) {
         // Get the searchid and create a virtual mosaic from multiple scenes.
         // searchidを取得し、複数シーンを仮想モザイク化する。
         // =============================================================
-        btnFetchSatellite.textContent = "Generating Mosaic Tiles...";
+        setImageryFetchProgress("Registering the virtual mosaic...", 55);
         
         usedMosaicScenes.clear();
         inspectedMosaicTiles.clear();
@@ -1199,6 +1364,8 @@ function setupPanelEvents(map) {
         }
   
         const mosaicResult = await mosaicResponse.json();
+        // 2026/10/18 Added
+        setImageryFetchProgress("Preparing map tiles...", 70);
         console.log("[Django Mosaic Result]", mosaicResult);
         const searchId = mosaicResult.searchId;
         // const mosaicTileUrl = mosaicResult.tileUrl;
@@ -1213,293 +1380,6 @@ function setupPanelEvents(map) {
         console.log("[RAW]", mosaicResult.tileUrl);
         console.log("[FIXED]", mosaicTileUrl);
 
-
-        
-        // const mosaicRegisterUrl = "http://localhost:8001/api/mosaic/create/";
-        //const mosaicRegisterUrl = "https://planetarycomputer.microsoft.com/" + "api/data/v1/mosaic/register";
-        
-        // const mosaicSearchBody = {
-        //  collections: [collectionId],
-        //  bbox: bbox,
-        //  datetime: datetimeRange,
-        //  query: {
-        //    "eo:cloud_cover": {
-        //      lte: cloudLimit
-        //      }
-        //    },
-          
-          /*
-           * Prioritize images with low cloud cover.: 雲量の少ない画像を優先。
-           * If the quality is comparable, prioritize the new image.: 同程度なら新しい画像を優先。
-           */
-          //sortby: [
-          //  {
-          //    field: "properties.eo:cloud_cover",
-          //    direction: "asc"
-          //  },
-          //  {
-          //    field: "properties.datetime",
-          //    direction: "desc"
-          //  }
-          //]
-        //};
-        
-        //console.log("[Mosaic Register URL]", mosaicRegisterUrl);
-        //console.log("[Mosaic Register Body]", mosaicSearchBody);
-        
-        //const mosaicRegisterResponse =
-        //  await fetch(
-        //    mosaicRegisterUrl,
-        //    {
-        //      method: "POST",
-        //      headers: {
-        //        "Content-Type": "application/json",
-        //        "Accept": "application/json"
-        //      },
-        //      body: JSON.stringify(mosaicSearchBody)
-        //    }
-        //);
-        
-        //if (!mosaicRegisterResponse.ok) {
-        //  const errorText = await mosaicRegisterResponse.text();
-        //  console.error("[Mosaic Register Error]",
-        //    {
-        //      url: mosaicRegisterUrl,
-        //      status: mosaicRegisterResponse.status,
-        //      statusText: mosaicRegisterResponse.statusText,
-        //      response: errorText
-        //    }
-        //  );
-        //  throw new Error("Mosaic search registration failed." + ` HTTP ${mosaicRegisterResponse.status}` + `\n${errorText.slice(0, 500)}`);
-        //}
-        
-        //const mosaicRegistration = await mosaicRegisterResponse.json();
-        //console.log("[Mosaic Registration]", mosaicRegistration);
-        
-        //const searchId = getMosaicSearchId(mosaicRegistration);
-        //if (!searchId) {
-        //  throw new Error("Mosaic registration was completed, but the search ID could not be retrieved.");
-        //}
-        
-        //console.log("[Mosaic Search ID]", searchId);
-        
-        // 新しいモザイクの使用シーン記録を初期化
-        //usedMosaicScenes.clear();
-        //inspectedMosaicTiles.clear();
-        
-        //window.debugUsedMosaicScenes = [];
-
-        //renderUsedMosaicScenesTable();
-        
-        // Save so that it can be checked from the console.
-        // Consoleから確認できるように保存
-        //window.debugMosaicRegistration = mosaicRegistration;
-        //window.debugMosaicSearchId = searchId;
-        
-        // =============================================================
-        // 5. Mosaic Display Parameters
-        // 5. モザイク表示パラメータ
-        // =============================================================
-        // Removed 2026/9/27
-        //btnFetchSatellite.textContent = "Generating Mosaic Tiles...";
-
-        // 2026/9/25 Django移行に伴い追加
-        //const mosaicResponse = await fetch("http://localhost:8001/api/mosaic/create/", {
-        //  method: "POST",
-        //  headers: {
-        //    "Content-Type": "application/json"
-        //  },
-        //  body: JSON.stringify({
-        //    collection: collectionId,
-        //    bbox: bbox,
-        //    datetime: datetimeRange,
-        //    query: {
-        //      "eo:cloud_cover": {
-        //        lte: cloudLimit
-        //      }
-        //    },
-        //    sortby: [
-        //      {
-        //        field: "properties.eo:cloud_cover",
-        //        direction: "asc"
-        //      },
-        //      {
-        //        field: "properties.datetime",
-        //        direction: "desc"
-        //      }
-        //    ]
-        //  })
-        //});
-        
-        //if (!mosaicResponse.ok) {
-        //  throw new Error(`Django mosaic_create failed. HTTP ${mosaicResponse.status}`);}
-
-        //const mosaicResult = await mosaicResponse.json();
-        
-        //console.log("[Django Mosaic Result]", mosaicResult);
-
-        //const djangoSearchId = mosaicResult.searchId;
-        //const mosaicTileUrl = mosaicResult.tileUrl;
-        //window.debugMosaicTileUrl = mosaicTileUrl;
-        //window.debugStacItems = mosaicResult.stacItems || [];
-        //console.log("[Search ID]", djangoSearchId);
-        //console.log("[Mosaic Tile URL]", mosaicTileUrl);
-
-        // Remove 2026/9/27 
-        // const mosaicParams = new URLSearchParams();
-        
-        // Specifying a collection is mandatory for the Mosaic Tile API.
-        // モザイクタイルAPIではcollection指定が必須
-        // mosaicParams.set("collection", collectionId);
-
-        // PNG tile
-        // mosaicParams.set("tile_format", "png");
-        
-        // -------------------------------------------------------------
-        // RGB
-        // -------------------------------------------------------------
-        // if (imgType === "rgb") {
-        //   if (satellite === "sentinel-2") {
-        //     mosaicParams.append("assets", "B04");
-        //     mosaicParams.append("assets", "B03");
-        //     mosaicParams.append("assets", "B02");
-        //     mosaicParams.append("rescale", "0,4000");
-        //     mosaicParams.append("rescale", "0,4000");
-        //     mosaicParams.append("rescale", "0,4000");
-        //   } else {
-        //     mosaicParams.append("assets", "red");
-        //     mosaicParams.append("assets", "green");
-        //     mosaicParams.append("assets", "blue");
-        //     mosaicParams.append("rescale", "7000,18000");
-        //     mosaicParams.append("rescale", "7000,18000");
-        //     mosaicParams.append("rescale", "7000,18000");
-        //     mosaicParams.set("color_formula", "Gamma RGB 1.5 Saturation 1.1");
-        //   }
-        // -------------------------------------------------------------
-        // NDVI、NDWI、NDMI、SAVI、NBRI
-        // -------------------------------------------------------------
-        //} else {
-        //   let indexAssets = [];
-        //   let expression = "";
-        //   if (satellite === "sentinel-2") {
-        //     switch (imgType) {
-        //       case "ndvi":
-        //         indexAssets = ["B08", "B04"];
-        //         expression = "(B08-B04)/(B08+B04)";
-        //         break;
-        //       case "ndwi":
-        //         indexAssets = ["B03", "B08"];
-        //         expression = "(B03-B08)/(B03+B08)";
-        //         break;
-        //       case "ndmi":
-        //         indexAssets = ["B08", "B11"];
-        //         expression = "(B08-B11)/(B08+B11)";
-        //         break;
-        //       case "savi":
-        //         indexAssets = ["B08", "B04"];
-        //         expression = "1.5*(B08-B04)" + "/(B08+B04+5000)";
-        //         break;
-        //       case "nbri":
-        //         indexAssets = ["B08", "B12"];
-        //         expression = "(B08-B12)/(B08+B12)";
-        //         break;
-        //       default:
-        //         throw new Error("Unsupported Sentinel-2 image type: " + imgType);
-        //   }
-        //} else {
-        //     switch (imgType) {
-        //       case "ndvi":
-        //         indexAssets = ["nir08", "red"];
-        //         expression = "(nir08-red)/(nir08+red)"; 
-        //         break;
-        //       case "ndwi":
-        //         indexAssets = ["green", "nir08"];
-        //         expression = "(green-nir08)/(green+nir08)";
-        //         break;
-        //       case "ndmi":
-        //         indexAssets = ["nir08", "swir16"];
-        //         expression = "(nir08-swir16)" + "/(nir08+swir16)";
-        //         break;
-        //       case "savi":
-        //         indexAssets = ["nir08", "red"];
-        //         expression = "1.5*(nir08-red)" + "/(nir08+red+0.5)";
-        //         break;
-        //       case "nbri":
-        //         indexAssets = ["nir08", "swir22"];
-        //         expression = "(nir08-swir22)" + "/(nir08+swir22)";
-        //         break;
-        //       default:
-        //         throw new Error("Unsupported Landsat image type: " + imgType);
-        //     }
-        //   }
-
-        //   indexAssets.forEach(function(assetName) {
-        //      mosaicParams.append("assets",assetName);
-        //   });
-
-        //   mosaicParams.set("asset_as_band", "true");
-        //   mosaicParams.set("expression", expression);
-        //   mosaicParams.set("colormap_name", "viridis");
-        //   mosaicParams.set("rescale", "-1,1");
-           
-        //   console.log("[Mosaic Index Assets]",indexAssets);
-        //   console.log("[Mosaic Expression]", expression);
-        //}
-        
-        // =============================================================
-        // 6. Mosaic TileJSON URL
-        // 6. モザイクTileJSON URL
-        // =============================================================
-        /*
-         * Even if the registration response contains a TileJSON link, 
-         * the URL is constructed from the `searchid` in order to append display parameters.
-         * 登録レスポンスにTileJSONリンクがある場合でも、
-         * 表示パラメータを付加するため、searchidからURLを構築する。
-         */
-        // Remove 2026/9/27
-        //const responseTileJsonLink = getMosaicTileJsonLink(mosaicRegistration);
-        //console.log("[Mosaic Response TileJSON Link]", responseTileJsonLink);
-        //const mosaicTileJsonUrl =
-        //  "https://planetarycomputer.microsoft.com/"
-        //  + "api/data/v1/mosaic/"
-        //  + `${encodeURIComponent(searchId)}/`
-        //  + "WebMercatorQuad/tilejson.json?"
-        //  + mosaicParams.toString();
-        //console.log("[Mosaic TileJSON URL]", mosaicTileJsonUrl);
-        
-        //window.debugMosaicTileJsonUrl = mosaicTileJsonUrl;
-        //const mosaicTileJsonResponse = await fetch(mosaicTileJsonUrl,
-        //  {
-        //    method: "GET",
-        //    headers: {
-        //      "Accept":"application/json"
-        //    }
-        //});
-        
-        //if (!mosaicTileJsonResponse.ok) {
-        //  const errorText = await mosaicTileJsonResponse.text();
-        //  console.error("[Mosaic TileJSON Error]",
-        //    {
-        //      status: mosaicTileJsonResponse.status,
-        //      statusText: mosaicTileJsonResponse.statusText,
-        //      response: errorText,
-        //      url: mosaicTileJsonUrl
-        //    }
-        //  );
-        // throw new Error("Failed to retrieve the mosaic TileJSON." + ` HTTP ${mosaicTileJsonResponse.status}`);
-        //}
-        
-        //const mosaicTileJson = await mosaicTileJsonResponse.json();
-        //console.log("[Mosaic TileJSON]", mosaicTileJson);
-        //if (!Array.isArray(mosaicTileJson.tiles) || mosaicTileJson.tiles.length === 0) {
-        //  throw new Error("The mosaic TileJSON is missing the `tiles` array.");
-        //}
-        
-        //const mosaicTileUrl = mosaicTileJson.tiles[0].replace(/&amp;/g, "&");
-        //console.log("[Mosaic Raw Tile URL]", mosaicTileJson.tiles[0]);
-        //console.log("[Mosaic Normalized Tile URL]", mosaicTileUrl);
-        //window.debugMosaicTileUrl = mosaicTileUrl;
-        
         // =============================================================
         // 7. Remove old satellite layer
         // 7. 古い衛星レイヤーを削除
@@ -1529,7 +1409,8 @@ function setupPanelEvents(map) {
         // 9. Leaflet Mosaic Layer
         // 9. Leafletモザイクレイヤー
         // =============================================================
-        btnFetchSatellite.textContent = "Rendering Mosaic...";
+        setImageryFetchProgress("Rendering mosaic tiles...", 80);
+        imageryLayerStarted = true;
         currentSatelliteLayer = L.tileLayer(mosaicTileUrl,
           {
             pane: "sentinelPane",
@@ -1555,9 +1436,13 @@ function setupPanelEvents(map) {
         let loadedTileCount = 0;
         let failedTileCount = 0;
         let successMessageShown = false;
+        // 2026/10/18 Added
+        let imageryCompletionTimerId = null;
         
         currentSatelliteLayer.on("tileload", function(tileEvent) {
           loadedTileCount += 1;
+          // 2026/10/18 Added
+          setImageryFetchProgress(("Rendering mosaic tiles... " + `${loadedTileCount} tile(s) loaded`), Math.min(95, 82 + loadedTileCount));
           if (loadedTileCount === 1) {
             console.log("[Mosaic First Tile Loaded]", tileEvent.coords);
           }
@@ -1575,46 +1460,75 @@ function setupPanelEvents(map) {
          * TileJSON取得だけではなく、
          * 実際の画像タイルが1枚以上読み込まれてから成功と表示する。
          */
+          // 2026/10/18 Updated
           if (!successMessageShown) {
             successMessageShown = true;
+            imageryCompleted = true;
+            btnFetchSatellite.disabled = false;
             btnFetchSatellite.textContent = "Fetch Satellite Image";
-            alert("Displayed the BBox mosaic image.\n\n" + `Platform: ${satellite}\n` + `Display type: ${imgType}\n` + `Search range BBox\n` + `Number of selected municipalities: ` + window.selectedMunicipios.length);
+            finishImageryFetchProgress(true, "Mosaic image displayed successfully.");
+            
+            /*
+             * 成功欄はしばらく残し、後で自動的に閉じる。
+             */
+            imageryCompletionTimerId = setTimeout(
+              function() {
+                if (imageryFetchProgress) {
+                  imageryFetchProgress.classList.remove("is-visible");
+                }
+              },
+              5000
+            );
+            console.log("[Mosaic Display Complete]", {
+              platform: satellite,
+              imageType: imgType,
+              selectedMunicipios: window.selectedMunicipios.length,
+              firstLoadedTile: tileEvent.coords
+            });
           }
         });
         
         // Edit 2026/9/27
-        //currentSatelliteLayer.on("tileerror", function(tileEvent) {
-        //  failedTileCount += 1;
-        //  console.error("[Mosaic Tile Error]", {
-        //    coords: tileEvent.coords,
-        //    error: tileEvent.error,
-        //    tile: tileEvent.tile,
-        //    failedTileCount: failedTileCount,
-        //    url: mosaicTileUrl
-        //  });
-        //});
         currentSatelliteLayer.on("tileerror", function(tileEvent) {
+          failedTileCount += 1;
+          setImageryFetchProgress(("Rendering mosaic tiles... " + `${failedTileCount} tile error(s)`), 90);
           console.error("[Mosaic Tile Error URL]", tileEvent.tile.src);
-          fetch(tileEvent.tile.src).then(async function(response) {
-            console.error("[Tile HTTP Status]", response.status, response.statusText);
-            const text = await response.text();
-            console.error("[Tile Response Body]", text.slice(0, 1000));
-          })
-            .catch(function(error) {
-              console.error("[Tile Fetch Error]", error);
-            });
+          console.error("[Mosaic Tile Error]", {
+            coords: tileEvent.coords,
+            error: tileEvent.error,
+            url: tileEvent.tile.src,
+            failedTileCount: failedTileCount
+          });
+          //fetch(tileEvent.tile.src).then(async function(response) {
+          //  console.error("[Tile HTTP Status]", response.status, response.statusText);
+          //  const text = await response.text();
+          //  console.error("[Tile Response Body]", text.slice(0, 1000));
+          //})
+          //  .catch(function(error) {
+          //    console.error("[Tile Fetch Error]", error);
+          //  });
         });
         
         currentSatelliteLayer.on("loading", function() {
           console.log("[Mosaic Layer Loading]");
         });
         
+        // 2026/10/18 Updated
         currentSatelliteLayer.on("load", function() {
-          console.log("[Mosaic Layer Load Complete]",
-          {
+          console.log("[Mosaic Layer Load Complete]", {
             loadedTileCount: loadedTileCount,
             failedTileCount: failedTileCount
           });
+        /*
+         * tileloadが何らかの理由で先に完了処理を
+         * 実行していない場合の予備処理。
+         */
+        if (!imageryCompleted && loadedTileCount > 0) {
+          imageryCompleted = true;
+          btnFetchSatellite.disabled = false;
+          btnFetchSatellite.textContent = "Fetch Satellite Image";
+          finishImageryFetchProgress(true, ("Mosaic image displayed. " + `${loadedTileCount} tile(s) loaded.`));
+        }
         });
         
         currentSatelliteLayer.addTo(map);
@@ -1665,14 +1579,20 @@ function setupPanelEvents(map) {
         
       } catch (error) {
         console.error("[BBox Mosaic Error]", error);
+        finishImageryFetchProgress(false, "Failed to display the mosaic image.");
         alert("An error occurred during BBox mosaic processing.\n\n" + error.message);
       
+      // 2026/10/18 Updated
       } finally {
-        btnFetchSatellite.disabled = false;
-        if (btnFetchSatellite.textContent !== "Fetch Satellite Image") {
-          btnFetchSatellite.textContent ="Fetch Satellite Image";
+      /*
+       * TileLayerの作成前に失敗した場合だけ、ここでボタンを戻す。
+       * TileLayer作成後はtileload/loadイベント側で戻す。
+       */
+        if (!imageryLayerStarted) {
+          btnFetchSatellite.disabled = false;
+          btnFetchSatellite.textContent = "Fetch Satellite Image";
         }
-      }
+      }  
     }); // addEventListener終了
   } // ← if(btnFetchSatellite)終了                                       
                                        
