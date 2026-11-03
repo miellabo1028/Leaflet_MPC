@@ -175,6 +175,26 @@ window.selectedMunicipios = [];
           </select>
         </div>
 
+        <!-- Added 202611/02 -->
+        <!-- ================================================== -->
+        <!-- GeoTIFF export extent                               -->
+        <!-- ================================================== -->
+
+        <div class="geotiff-clip-settings" style="width: 100%; margin-top: 8px; margin-bottom: 8px; padding: 6px; border: 1px solid #dddddd; border-radius: 4px; background: #fafafa; box-sizing: border-box;">
+          <label for="sel-geotiff-export-area" style="display: block; margin-bottom: 3px; color: #666666; font-size: 10px;">Export Area</label>
+          <select id="sel-geotiff-export-area" style="width: 100%; min-width: 0; max-width: 100%; padding: 3px; font-size: 10px; box-sizing: border-box;">
+            <option value="bbox" selected>Rectangular extent</option>
+            <option value="selected-buffer">Selected Municipios + buffer</option></select>
+          <div id="geotiff-buffer-settings" style="display: none; width: 100%; margin-top: 6px; box-sizing: border-box;">
+            <label for="txt-geotiff-buffer-m" style="display: block; margin-bottom: 3px; color: #666666; font-size: 10px;">Buffer distance</label>
+            <div style="display: flex; align-items: center; gap: 5px; width: 100%; box-sizing: border-box;">
+              <input id="txt-geotiff-buffer-m" type="number" value="100" min="0" max="10000" step="10" style="flex: 1 1 auto; min-width: 0; padding: 3px; font-size: 10px; box-sizing: border-box;">
+              <span style="flex: 0 0 auto; color: #666666; font-size: 10px;">m</span>
+            </div>
+            <div style="width: 100%; margin-top: 4px; color: #666666; font-size: 9px; line-height: 1.4; white-space: normal; overflow-wrap: anywhere; box-sizing: border-box;">The selected Municipio geometries are merged and expanded by the specified buffer distance.</div>
+          </div>
+        </div>
+
         <!-- Settings note -->
         <div id="export-settings-note" style="margin-bottom: 6px; padding: 5px; border-radius: 3px; background: #eeeeee; color: #555; font-size: 9px; line-height: 1.4;">Distribution RGB is exported as display-optimized 8-bit.</div>
 
@@ -270,6 +290,16 @@ function setupPanelEvents(map) {
   // 2026/10/16 added.
   const exportPurposeElement = document.getElementById("sel-export-purpose");
   const exportResolutionElement = document.getElementById("sel-export-resolution");
+
+  // =====================================================
+  // Added 2026/11/03
+  // Stage 3-2:
+  // GeoTIFF export-area and buffer settings
+  // =====================================================
+  const geotiffExportAreaElement = document.getElementById("sel-geotiff-export-area");
+  const geotiffBufferSettings = document.getElementById("geotiff-buffer-settings");
+  const geotiffBufferElement = document.getElementById("txt-geotiff-buffer-m");
+ 
   const exportSettingsNote = document.getElementById("export-settings-note");
   const exportProgressPanel = document.getElementById("raster-export-progress");
   const exportProgressMessage = document.getElementById("raster-export-message");
