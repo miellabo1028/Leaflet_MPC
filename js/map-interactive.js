@@ -400,6 +400,52 @@ function setupPanelEvents(map) {
   }
 
   // ================================================================
+  // Added 2026/11/03
+  // Stage 3-2:
+  // GeoTIFF clipping settings UI
+  // 切り抜き選択時のみバッファ設定を表示
+  // ================================================================
+  function updateGeoTiffClipSettings() {
+    if (!geotiffExportAreaElement || !geotiffBufferSettings) {
+      return;
+    }
+    const useSelectedGeometry = geotiffExportAreaElement.value === "selected-buffer";
+    geotiffBufferSettings.style.display = useSelectedGeometry ? "block" : "none";
+  }
+  if (geotiffExportAreaElement) {
+    geotiffExportAreaElement.addEventListener("change", updateGeoTiffClipSettings);
+  }
+  // 初期表示を反映
+  updateGeoTiffClipSettings();
+
+  // ================================================================
+  // Added 2026/11/03
+  // Stage 3-2:
+  // Build a GeoJSON FeatureCollection from selected Municipios
+  // 選択中のMunicipioからGeoJSON FeatureCollectionを作成
+  // ================================================================
+  function getSelectedMunicipioFeatureCollection() {
+    const selectedMunicipios = Array.isArray(window.selectedMunicipios) ? window.selectedMunicipios : [];
+    const features = selectedMunicipios.filter(function(feature) {
+      return (feature && feature.geometry && feature.geometry.type && feature.geometry.coordinates);
+    })
+      .map(function(feature) {
+        return {
+          type: "Feature",
+          properties: {
+            MUN_CODE: feature.properties?.MUN_CODE ?? null,
+            MUN_NAME: feature.properties?.MUN_NAME ?? feature.properties?.MUNICIPIO ?? null
+          },
+          geometry: feature.geometry
+        };
+      });
+    return {
+      type: "FeatureCollection",
+      features: features
+    };
+  }
+
+  // ================================================================
   // 2026/10/16 Added.
   // Export Settings UI
   // 画像タイプに応じて用途メニューを制御
@@ -1838,6 +1884,26 @@ function setupPanelEvents(map) {
       const requestData = window.lastMosaicRequest;
       const exportPurpose = exportPurposeElement ? exportPurposeElement.value : "analysis";
       const resolutionValue = exportResolutionElement ? exportResolutionElement.value : "auto";
+
+      // Added 1026/11/02
+      const exportAreaMode = geotiffExportAreaElement ? geotiffExportAreaElement.value : "bbox";
+      const clipToSelectedMunicipios = exportAreaMode === "selected-buffer";
+      let clipFeatureCollection = null;
+      let bufferMeters = 0;
+      if (clipToSelectedMunicipios) {
+        clipFeatureCollection = getSelectedMunicipioFeatureCollection();
+        if (!clipFeatureCollection.features.length) {
+          alert("Select at least one Municipio before using the clipped export option.");
+          return;
+        }
+        bufferMeters = Number.parseFloat(geotiffBufferElement ? geotiffBufferElement.value : "100");
+        if (!Number.isFinite(bufferMeters) || bufferMeters < 0 || bufferMeters > 10000) {
+          alert("Buffer distance must be between 0 and 10,000 metres.");
+          return;
+        }
+      }
+      
+      // Updated 2026/11/03
       const exportBody = {
         collections: [requestData.collectionId],
         bbox: requestData.bbox,
@@ -1848,8 +1914,19 @@ function setupPanelEvents(map) {
           "eo:cloud_cover": {
             lte: requestData.cloudLimit
           }
-        }
+        },
+        clip_mode: clipToSelectedMunicipios ? "selected-buffer" : "bbox",
+        clip_geometry: clipFeatureCollection,
+        buffer_m: bufferMeters
       };
+
+      // 3. ここにログを追加
+      console.log("[GeoTIFF Export Extent]", {
+        clipMode: exportBody.clip_mode,
+        bufferMeters: exportBody.buffer_m,
+        selectedFeatureCount: clipFeatureCollection ? clipFeatureCollection.features.length : 0,
+        originalBbox: requestData.bbox
+      });
 
       if (resolutionValue !== "auto") {
         exportBody.resolution_m = Number(resolutionValue);
