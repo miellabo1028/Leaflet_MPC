@@ -350,4 +350,29 @@
   display: inline-block;
 }
 
+/* ==================================================
+ * Added 2026/11/02
+ * GeoTIFF clipping settings
+ * ================================================== */
+.geotiff-clip-settings {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+#sel-geotiff-export-area,
+#txt-geotiff-buffer-m {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+#geotiff-buffer-settings {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+
 
